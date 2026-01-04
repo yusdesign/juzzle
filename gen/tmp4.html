@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Juzzle Generator - Correct Boolean per Side</title>
+    <style>
+        body { margin: 0; padding: 20px; background: #0a0a0a; color: #f0f0f0; font-family: monospace; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { color: #00ff88; text-align: center; margin: 20px 0; }
+        .subtitle { text-align: center; color: #888; margin-bottom: 30px; }
+        .controls {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: #1a1a1a;
+            border-radius: 10px;
+            border: 1px solid #333;
+        }
+        button {
+            padding: 12px 24px;
+            margin: 8px;
+            background: #00aa55;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-family: monospace;
+        }
+        button:hover { background: #00cc66; }
+        button.secondary { background: #333; }
+        button.secondary:hover { background: #444; }
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+        .piece-card {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #333;
+        }
+        .piece-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+        .piece-id { color: #00ff88; font-weight: bold; }
+        .piece-state { color: #888; font-size: 12px; }
+        .piece-svg {
+            width: 100%;
+            height: 300px;
+            background: #0f0f0f;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        .piece-info {
+            margin-top: 15px;
+            font-size: 12px;
+            color: #888;
+        }
+        .legend {
+            margin-top: 40px;
+            padding: 20px;
+            background: #1a1a1a;
+            border-radius: 10px;
+            border: 1px solid #333;
+        }
+        .legend-item {
+            display: inline-block;
+            margin: 0 20px 10px 0;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .knob { background: rgba(0, 255, 136, 0.1); border: 1px solid #00ff88; }
+        .hole { background: rgba(255, 85, 0, 0.1); border: 1px solid #ff5500; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Juzzle Generator - One Boolean per Side</h1>
+        <div class="subtitle">Each side booleans with ONE circle (inner difference, outer union)</div>
+        
+        <div class="controls">
+            <button onclick="generatePieces(16)">Generate 16 Pieces</button>
+            <button onclick="generatePieces(24)">Generate 24 Pieces</button>
+            <button onclick="toggleView()" class="secondary">Toggle Pattern View</button>
+            <button onclick="exportGrid()" class="secondary">Export Grid</button>
+        </div>
+        
+        <div id="grid"></div>
+        
+        <div class="legend">
+            <div class="legend-item knob">🟢 KNOB (Union with square)</div>
+            <div class="legend-item hole">🔴 HOLE (Difference from square)</div>
+            <div style="margin-top: 10px; font-size: 11px; color: #666;">
+                Each side: Pick ONE circle → Union if outer, Difference if inner
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // EXACT template coordinates
+        const TEMPLATE = {
+            square: { x: 373.83, y: 381.35, width: 355.32, height: 355.32 },
+            // Organized by SIDES - each side has 2 circles (top/bottom or left/right)
+            sides: {
+                left: [
+                    { cx: 331.55, cy: 559.01, type: 'outer' },  // Left Top - OUTER
+                    { cx: 414.33, cy: 559.01, type: 'inner' }   // Left Bottom - INNER
+                ],
+                right: [
+                    { cx: 688.86, cy: 559.01, type: 'inner' },  // Right Top - INNER
+                    { cx: 771.64, cy: 559.01, type: 'outer' }   // Right Bottom - OUTER
+                ],
+                top: [
+                    { cx: 551.49, cy: 336.84, type: 'outer' },  // Top Left - OUTER
+                    { cx: 551.49, cy: 419.63, type: 'inner' }   // Top Right - INNER
+                ],
+                bottom: [
+                    { cx: 551.49, cy: 694.15, type: 'inner' },  // Bottom Left - INNER
+                    { cx: 551.49, cy: 776.94, type: 'outer' }   // Bottom Right - OUTER
+                ]
+            },
+            radius: 64.65
+        };
+
+        class CorrectBooleanGenerator {
+            constructor() {
+                this.normalizeCoordinates();
+            }
+            
+            normalizeCoordinates() {
+                this.square = { x: 0, y: 0, width: TEMPLATE.square.width, height: TEMPLATE.square.height };
+                
+                // Normalize all circle positions
+                this.sides = {};
+                for (const [sideName, circles] of Object.entries(TEMPLATE.sides)) {
+                    this.sides[sideName] = circles.map(circle => ({
+                        cx: circle.cx - TEMPLATE.square.x,
+                        cy: circle.cy - TEMPLATE.square.y,
+                        type: circle.type,
+                        original: circle
+                    }));
+                }
+            }
+            
+            // Generate piece: for each side, pick ONE circle (0 or 1)
+            generatePiece() {
+                const piece = {
+                    left: Math.random() > 0.5 ? 0 : 1,    // Pick left-top (0) or left-bottom (1)
+                    right: Math.random() > 0.5 ? 0 : 1,   // Pick right-top (0) or right-bottom (1)
+                    top: Math.random() > 0.5 ? 0 : 1,     // Pick top-left (0) or top-right (1)
+                    bottom: Math.random() > 0.5 ? 0 : 1   // Pick bottom-left (0) or bottom-right (1)
+                };
+                
+                return piece;
+            }
+            
+            // Create piece with correct booleans
+            createPieceSVG(piece, id, color) {
+                const svgNS = "http://www.w3.org/2000/svg";
+                const svg = document.createElementNS(svgNS, 'svg');
+                svg.setAttribute('viewBox', '-100 -100 555.32 555.32'); // Add padding
+                svg.setAttribute('width', '300');
+                svg.setAttribute('height', '300');
+                
+                // Create clip path for square
+                const defs = document.createElementNS(svgNS, 'defs');
+                
+                // Square clip
+                const squareClip = document.createElementNS(svgNS, 'clipPath');
+                squareClip.setAttribute('id', `square-clip-${id}`);
+                const clipRect = document.createElementNS(svgNS, 'rect');
+                clipRect.setAttribute('x', '0');
+                clipRect.setAttribute('y', '0');
+                clipRect.setAttribute('width', this.square.width);
+                clipRect.setAttribute('height', this.square.height);
+                clipRect.setAttribute('rx', '10');
+                clipRect.setAttribute('ry', '10');
+                squareClip.appendChild(clipRect);
+                defs.appendChild(squareClip);
+                
+                svg.appendChild(defs);
+                
+                // Base square
+                const square = document.createElementNS(svgNS, 'rect');
+                square.setAttribute('x', '0');
+                square.setAttribute('y', '0');
+                square.setAttribute('width', this.square.width);
+                square.setAttribute('height', this.square.height);
+                square.setAttribute('fill', color);
+                square.setAttribute('stroke', '#333');
+                square.setAttribute('stroke-width', '8');
+                square.setAttribute('rx', '10');
+                square.setAttribute('ry', '10');
+                svg.appendChild(square);
+                
+                // Process each side
+                for (const [sideName, circleIndex] of Object.entries(piece)) {
+                    const circles = this.sides[sideName];
+                    const selectedCircle = circles[circleIndex];
+                    
+                    if (selectedCircle.type === 'inner') {
+                        // INNER = DIFFERENCE (cut hole from square)
+                        // Create hole by drawing a cutout
+                        const hole = document.createElementNS(svgNS, 'circle');
+                        hole.setAttribute('cx', selectedCircle.cx);
+                        hole.setAttribute('cy', selectedCircle.cy);
+                        hole.setAttribute('r', TEMPLATE.radius);
+                        hole.setAttribute('fill', '#0a0a0a'); // Background color
+                        hole.setAttribute('stroke', '#ff5500');
+                        hole.setAttribute('stroke-width', '4');
+                        hole.setAttribute('stroke-dasharray', '4,4');
+                        hole.setAttribute('clip-path', `url(#square-clip-${id})`);
+                        svg.appendChild(hole);
+                        
+                        // Add inner cut indicator
+                        const cutIndicator = document.createElementNS(svgNS, 'circle');
+                        cutIndicator.setAttribute('cx', selectedCircle.cx);
+                        cutIndicator.setAttribute('cy', selectedCircle.cy);
+                        cutIndicator.setAttribute('r', TEMPLATE.radius - 10);
+                        cutIndicator.setAttribute('fill', 'none');
+                        cutIndicator.setAttribute('stroke', '#ff5500');
+                        cutIndicator.setAttribute('stroke-width', '2');
+                        cutIndicator.setAttribute('stroke-opacity', '0.5');
+                        cutIndicator.setAttribute('clip-path', `url(#square-clip-${id})`);
+                        svg.appendChild(cutIndicator);
+                    } else {
+                        // OUTER = UNION (add knob to square)
+                        const knob = document.createElementNS(svgNS, 'circle');
+                        knob.setAttribute('cx', selectedCircle.cx);
+                        knob.setAttribute('cy', selectedCircle.cy);
+                        knob.setAttribute('r', TEMPLATE.radius);
+                        knob.setAttribute('fill', color);
+                        knob.setAttribute('stroke', '#00ff88');
+                        knob.setAttribute('stroke-width', '6');
+                        svg.appendChild(knob);
+                        
+                        // Add knob highlight
+                        const highlight = document.createElementNS(svgNS, 'circle');
+                        highlight.setAttribute('cx', selectedCircle.cx);
+                        highlight.setAttribute('cy', selectedCircle.cy);
+                        highlight.setAttribute('r', TEMPLATE.radius - 15);
+                        highlight.setAttribute('fill', 'rgba(255,255,255,0.2)');
+                        highlight.setAttribute('stroke', 'none');
+                        svg.appendChild(highlight);
+                    }
+                }
+                
+                // Add center marker
+                const center = document.createElementNS(svgNS, 'circle');
+                center.setAttribute('cx', this.square.width / 2);
+                center.setAttribute('cy', this.square.height / 2);
+                center.setAttribute('r', '3');
+                center.setAttribute('fill', '#fff');
+                center.setAttribute('opacity', '0.3');
+                svg.appendChild(center);
+                
+                return svg;
+            }
+            
+            getPieceCode(piece) {
+                const sideCodes = {
+                    left: ['LT', 'LB'],
+                    right: ['RT', 'RB'],
+                    top: ['TL', 'TR'],
+                    bottom: ['BL', 'BR']
+                };
+                
+                let code = '';
+                for (const [sideName, circleIndex] of Object.entries(piece)) {
+                    const circleType = this.sides[sideName][circleIndex].type;
+                    code += `${sideCodes[sideName][circleIndex]}${circleType === 'inner' ? 'H' : 'K'} `;
+                }
+                return code.trim();
+            }
+            
+            getPieceStats(piece) {
+                let knobs = 0, holes = 0;
+                for (const [sideName, circleIndex] of Object.entries(piece)) {
+                    if (this.sides[sideName][circleIndex].type === 'inner') {
+                        holes++;
+                    } else {
+                        knobs++;
+                    }
+                }
+                return { knobs, holes };
+            }
+        }
+
+        // Colors
+        const colors = [
+            '#1e90ff', '#32cd32', '#ff4500', '#ffd700',
+            '#9370db', '#00ced1', '#ff69b4', '#9acd32',
+            '#4169e1', '#3cb371', '#dc143c', '#ff8c00',
+            '#6a5acd', '#20b2aa', '#ff1493', '#7cfc00',
+            '#0000cd', '#2e8b57', '#b22222', '#ffa500',
+            '#483d8b', '#008b8b', '#c71585', '#7fff00'
+        ];
+
+        let showPattern = false;
+        let currentPieces = [];
+        const generator = new CorrectBooleanGenerator();
+
+        function generatePieces(count) {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            currentPieces = [];
+            
+            for (let i = 0; i < count; i++) {
+                const piece = generator.generatePiece();
+                const color = colors[i % colors.length];
+                const stats = generator.getPieceStats(piece);
+                
+                const card = document.createElement('div');
+                card.className = 'piece-card';
+                
+                // Header
+                const header = document.createElement('div');
+                header.className = 'piece-header';
+                
+                const idDiv = document.createElement('div');
+                idDiv.className = 'piece-id';
+                idDiv.textContent = `Piece ${i + 1}`;
+                
+                const stateDiv = document.createElement('div');
+                stateDiv.className = 'piece-state';
+                stateDiv.textContent = `${stats.knobs}K ${stats.holes}H`;
+                
+                header.appendChild(idDiv);
+                header.appendChild(stateDiv);
+                card.appendChild(header);
+                
+                // SVG
+                const svg = generator.createPieceSVG(piece, i, color);
+                svg.className = 'piece-svg';
+                card.appendChild(svg);
+                
+                // Info
+                if (showPattern) {
+                    const infoDiv = document.createElement('div');
+                    infoDiv.className = 'piece-info';
+                    infoDiv.textContent = generator.getPieceCode(piece);
+                    card.appendChild(infoDiv);
+                }
+                
+                grid.appendChild(card);
+                currentPieces.push({ id: i, piece, color, stats });
+            }
+        }
+
+        function toggleView() {
+            showPattern = !showPattern;
+            generatePieces(currentPieces.length || 16);
+        }
+
+        function exportGrid() {
+            const grid = document.getElementById('grid');
+            const gridSVG = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            gridSVG.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+            gridSVG.setAttribute('width', '1200');
+            gridSVG.setAttribute('height', '800');
+            gridSVG.setAttribute('viewBox', '0 0 1200 800');
+            
+            // Background
+            const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            bg.setAttribute('width', '1200');
+            bg.setAttribute('height', '800');
+            bg.setAttribute('fill', '#0a0a0a');
+            gridSVG.appendChild(bg);
+            
+            // Add pieces in grid
+            const cols = 4;
+            const rows = Math.ceil(currentPieces.length / cols);
+            const pieceSize = 250;
+            const padding = 30;
+            
+            currentPieces.forEach((p, i) => {
+                const col = i % cols;
+                const row = Math.floor(i / cols);
+                const x = padding + col * (pieceSize + padding);
+                const y = padding + row * (pieceSize + padding);
+                
+                const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                group.setAttribute('transform', `translate(${x}, ${y}) scale(0.7)`);
+                
+                const pieceSVG = generator.createPieceSVG(p.piece, `export-${i}`, p.color);
+                pieceSVG.removeAttribute('width');
+                pieceSVG.removeAttribute('height');
+                pieceSVG.setAttribute('viewBox', '-100 -100 555.32 555.32');
+                
+                // Clone and append
+                const cloned = document.importNode(pieceSVG, true);
+                group.appendChild(cloned);
+                
+                // Add label
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', '177.66');
+                text.setAttribute('y', '450');
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('fill', '#888');
+                text.setAttribute('font-size', '14');
+                text.textContent = `Piece ${i + 1}`;
+                group.appendChild(text);
+                
+                gridSVG.appendChild(group);
+            });
+            
+            // Export
+            const serializer = new XMLSerializer();
+            const svgString = serializer.serializeToString(gridSVG);
+            const blob = new Blob([svgString], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'juzzle-grid.svg';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Initialize
+        generatePieces(16);
+    </script>
+</body>
+</html>
