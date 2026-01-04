@@ -1,0 +1,29 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+<svg width="500" height="500" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <!-- Create the piece as a single path using union -->
+        <clipPath id="pieceShape">
+            <!-- Square base -->
+            <rect x="373.83" y="381.35" width="355.32" height="355.32"/>
+            <!-- 8 circular knobs (union with square) -->
+            <!-- Left pair -->
+            <circle cx="331.55" cy="559.01" r="64.65"/>
+            <circle cx="414.33" cy="559.01" r="64.65"/>
+            <!-- Right pair -->
+            <circle cx="688.86" cy="559.01" r="64.65"/>
+            <circle cx="771.64" cy="559.01" r="64.65"/>
+            <!-- Top pair -->
+            <circle cx="551.49" cy="336.84" r="64.65"/>
+            <circle cx="551.49" cy="419.63" r="64.65"/>
+            <!-- Bottom pair -->
+            <circle cx="551.49" cy="694.15" r="64.65"/>
+            <circle cx="551.49" cy="776.94" r="64.65"/>
+        </clipPath>
+    </defs>
+    
+    <!-- Single puzzle piece (solid) -->
+    <rect width="1080" height="1080" fill="#7E8AA2" clip-path="url(#pieceShape)"/>
+    
+    <!-- Outline stroke -->
+    <rect width="1080" height="1080" fill="none" stroke="#4A5568" stroke-width="8" clip-path="url(#pieceShape)"/>
+</svg>
