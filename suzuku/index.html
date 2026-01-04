@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Juzzle Suzuku - Knobs & Holes Edition</title>
+    <style>
+        /* Mobile-first responsive design */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a1929;
+            color: #e6f1ff;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        /* Header */
+        .app-header {
+            background: #112240;
+            padding: 15px 20px;
+            border-bottom: 1px solid #233554;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        @media (min-width: 768px) {
+            .header-content {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #64ffda;
+        }
+
+        /* Mobile Menu */
+        .mobile-menu-btn {
+            display: block;
+            background: none;
+            border: none;
+            color: #64ffda;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+            position: absolute;
+            right: 20px;
+            top: 15px;
+        }
+
+        @media (min-width: 768px) {
+            .mobile-menu-btn {
+                display: none;
+            }
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #0a1929;
+            color: #64ffda;
+            border: 1px solid #64ffda;
+        }
+
+        .btn-primary:hover {
+            background: rgba(100, 255, 218, 0.1);
+        }
+
+        .btn-secondary {
+            background: #233554;
+            color: #e6f1ff;
+        }
+
+        .btn-secondary:hover {
+            background: #2d4266;
+        }
+
+        .btn-icon {
+            padding: 8px;
+            min-width: 36px;
+            justify-content: center;
+        }
+
+        /* Main Layout */
+        .app-main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Game Grid - Vertical on mobile */
+        .game-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        @media (min-width: 768px) {
+            .game-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 40px;
+            }
+        }
+
+        /* Bank Section */
+        .bank-section {
+            order: 1;
+        }
+
+        @media (min-width: 768px) {
+            .bank-section {
+                order: 2;
+            }
+        }
+
+        .bank-container {
+            background: #112240;
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid #233554;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #233554;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #64ffda;
+        }
+
+        .bank-info {
+            font-size: 0.9rem;
+            color: #8892b0;
+        }
+
+        /* Bank Grid */
+        .bank-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        /* Bank Piece */
+        .bank-piece {
+            aspect-ratio: 1;
+            background: #0a1929;
+            border: 2px solid #233554;
+            border-radius: 10px;
+            cursor: grab;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bank-piece:hover {
+            border-color: #64ffda;
+            transform: scale(1.05);
+        }
+
+        .bank-piece.dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+
+        .bank-piece.used {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .bank-piece.used:hover {
+            transform: none;
+            border-color: #233554;
+        }
+
+        .piece-svg {
+            width: 90%;
+            height: 90%;
+            pointer-events: none;
+        }
+
+        /* Board Section */
+        .board-section {
+            order: 2;
+        }
+
+        @media (min-width: 768px) {
+            .board-section {
+                order: 1;
+            }
+        }
+
+        .board-container {
+            background: #112240;
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid #233554;
+        }
+
+        /* Board Grid */
+        .board-grid {
+            display: grid;
+            gap: 12px;
+            margin: 0 auto;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .board-cell {
+            aspect-ratio: 1;
+            background: #0a1929;
+            border: 2px solid #233554;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            overflow: hidden;
+        }
+
+        .board-cell:hover {
+            border-color: #64ffda;
+        }
+
+        .board-cell.placed {
+            background: rgba(100, 255, 218, 0.05);
+        }
+
+        .board-cell.locked {
+            border-color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.1);
+        }
+
+        .board-cell.invalid {
+            border-color: #ff6b6b;
+            animation: shake 0.5s;
+        }
+
+        /* Side Panel */
+        .side-panel {
+            grid-column: 1 / -1;
+            background: #112240;
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid #233554;
+            margin-top: 20px;
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-item {
+            background: #0a1929;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #64ffda;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #8892b0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Lockers */
+        .lockers-section {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #233554;
+        }
+
+        .lockers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .locker-cell {
+            aspect-ratio: 1;
+            background: #0a1929;
+            border: 1px solid #233554;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+
+        .locker-cell.filled {
+            background: rgba(255, 107, 107, 0.2);
+            border-color: #ff6b6b;
+            color: #ff6b6b;
+        }
+
+        /* Instructions */
+        .instructions {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #233554;
+        }
+
+        .instructions-toggle {
+            background: none;
+            border: none;
+            color: #64ffda;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            text-align: left;
+            padding: 10px 0;
+        }
+
+        .instructions-content {
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            max-height: 500px;
+        }
+
+        .instructions-content.collapsed {
+            max-height: 0;
+        }
+
+        .instruction-item {
+            margin: 12px 0;
+            padding-left: 20px;
+            position: relative;
+            color: #8892b0;
+            font-size: 0.9rem;
+        }
+
+        .instruction-item:before {
+            content: "→";
+            color: #64ffda;
+            position: absolute;
+            left: 0;
+        }
+
+        /* Knob/Hole Legend */
+        .legend {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: #8892b0;
+        }
+
+        .legend-knob, .legend-hole {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+
+        .legend-knob {
+            background: #4CAF50;
+            border: 2px solid #2E7D32;
+        }
+
+        .legend-hole {
+            background: #0a1929;
+            border: 2px dashed #f44336;
+        }
+
+        /* Animations */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        /* Mobile Specific */
+        @media (max-width: 767px) {
+            .app-main {
+                padding: 15px;
+            }
+            
+            .bank-grid {
+                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+                gap: 10px;
+            }
+            
+            .board-grid {
+                gap: 8px;
+            }
+            
+            .controls {
+                justify-content: center;
+            }
+            
+            .btn {
+                padding: 8px 15px;
+                font-size: 0.85rem;
+            }
+        }
+
+        /* Connection lines */
+        .connection-line {
+            stroke: #64ffda;
+            stroke-width: 2;
+            stroke-dasharray: 5, 5;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="app-header">
+        <div class="header-content">
+            <h1>🧩 Juzzle Suzuku</h1>
+            <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+            <div class="controls" id="header-controls">
+                <button class="btn btn-secondary" onclick="newGame(4)">
+                    <span>🔄</span> New Game
+                </button>
+                <button class="btn btn-secondary" onclick="generateLockers()">
+                    <span>🎲</span> Drop Lockers
+                </button>
+                <button class="btn btn-secondary" onclick="undoMove()">
+                    <span>↩️</span> Undo
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="app-main">
+        <div class="game-grid">
+            <!-- Piece Bank -->
+            <section class="bank-section">
+                <div class="bank-container">
+                    <div class="section-header">
+                        <h2 class="section-title">Piece Bank</h2>
+                        <div class="bank-info">
+                            <span id="available-count">16</span> available
+                        </div>
+                    </div>
+                    <div id="piece-bank" class="bank-grid"></div>
+                </div>
+            </section>
+
+            <!-- Game Board -->
+            <section class="board-section">
+                <div class="board-container">
+                    <div class="section-header">
+                        <h2 class="section-title">Game Board (4×4)</h2>
+                        <div class="controls">
+                            <button class="btn btn-icon btn-secondary" onclick="checkSolution()" title="Check Solution">
+                                ✅
+                            </button>
+                            <button class="btn btn-icon btn-secondary" onclick="clearBoard()" title="Clear Board">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                    <div id="board" class="board-grid"></div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Side Panel -->
+        <aside class="side-panel">
+            <!-- Stats -->
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="placed-count">0</div>
+                    <div class="stat-label">Placed</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="locked-count">0</div>
+                    <div class="stat-label">Locked</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="remaining-count">16</div>
+                    <div class="stat-label">Remaining</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="moves-count">0</div>
+                    <div class="stat-label">Moves</div>
+                </div>
+            </div>
+
+            <!-- Lockers Preview -->
+            <div class="lockers-section">
+                <h3>Lockers Preview</h3>
+                <div class="lockers-grid" id="lockers-preview"></div>
+                <div class="bank-info" style="margin-top: 10px;">
+                    Locked positions: <span id="lockers-count">0</span>
+                </div>
+            </div>
+
+            <!-- Instructions -->
+            <div class="instructions">
+                <button class="instructions-toggle" onclick="toggleInstructions()">
+                    <span>📖</span> How to Play
+                    <span style="margin-left: auto;">▼</span>
+                </button>
+                <div class="instructions-content">
+                    <div class="instruction-item">Drag pieces from bank to board</div>
+                    <div class="instruction-item">Connect KNOBS (green) to HOLES (red)</div>
+                    <div class="instruction-item">Pieces lock when correctly connected</div>
+                    <div class="instruction-item">Balance black/white pieces on board</div>
+                    <div class="instruction-item">No identical pieces can touch</div>
+                    <div class="instruction-item">Use UNDO to correct mistakes</div>
+                </div>
+            </div>
+
+            <!-- Legend -->
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-knob"></div>
+                    <span>Knob (protrusion)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-hole"></div>
+                    <span>Hole (indentation)</span>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <script>
+        // GAME CORE - Uses your generator's boolean shapes
+        class JuzzleSuzuku {
+            constructor(boardSize = 4) {
+                this.boardSize = boardSize;
+                this.totalCells = boardSize * boardSize;
+                this.board = Array(this.totalCells).fill(null);
+                this.lockedPositions = Array(this.totalCells).fill(false);
+                this.lockers = []; // Pre-locked starting positions
+                this.pieceBank = [];
+                this.moveHistory = [];
+                this.moveCount = 0;
+                this.pieceCache = new Map(); // Cache for piece SVGs
+                
+                // Colors from your generator
+                this.colors = [
+                    '#1e90ff', '#32cd32', '#ff4500', '#ffd700',
+                    '#9370db', '#00ced1', '#ff69b4', '#9acd32',
+                    '#4169e1', '#3cb371', '#dc143c', '#ff8c00',
+                    '#6a5acd', '#20b2aa', '#ff1493', '#7cfc00'
+                ];
+                
+                this.initGame();
+                this.render();
+            }
+
+            // Initialize game with proper boolean pieces
+            initGame() {
+                this.pieceBank = [];
+                const blackCount = Math.floor(this.totalCells / 2);
+                const whiteCount = this.totalCells - blackCount;
+                
+                // Generate pieces with boolean operations
+                for (let i = 0; i < this.totalCells; i++) {
+                    const color = i < blackCount ? '#000000' : '#FFFFFF';
+                    const type = i < blackCount ? 'black' : 'white';
+                    
+                    const piece = this.generateBooleanPiece(color, type, i);
+                    this.pieceBank.push(piece);
+                }
+                
+                this.shuffleArray(this.pieceBank);
+            }
+
+            // Generate piece with boolean knobs/holes (from your generator)
+            generateBooleanPiece(color, type, id) {
+                // Random pattern - each side picks one of two positions
+                const pattern = {
+                    left: Math.random() > 0.5 ? 0 : 1,
+                    right: Math.random() > 0.5 ? 0 : 1,
+                    top: Math.random() > 0.5 ? 0 : 1,
+                    bottom: Math.random() > 0.5 ? 0 : 1
+                };
+                
+                // Create SVG with boolean operations
+                const svg = this.createBooleanSVG(pattern, color);
+                
+                return {
+                    id: `${type}-${id}`,
+                    pattern,
+                    color,
+                    type,
+                    svg,
+                    code: this.getPatternCode(pattern),
+                    used: false,
+                    knobs: this.countKnobs(pattern),
+                    holes: 4 - this.countKnobs(pattern)
+                };
+            }
+
+            // Create SVG with real boolean operations (knobs = union, holes = difference)
+            createBooleanSVG(pattern, color) {
+                const svgNS = "http://www.w3.org/2000/svg";
+                const svg = document.createElementNS(svgNS, 'svg');
+                svg.setAttribute('viewBox', '0 0 200 200');
+                svg.setAttribute('class', 'piece-svg');
+                
+                // Scale down coordinates for 200x200 display
+                const scale = 200 / 355.32;
+                const squareSize = 200;
+                const knobRadius = 64.65 * scale;
+                const knobOffset = 41.72 * scale;
+                const center = squareSize / 2;
+                
+                // Define connection points (based on your template)
+                const connections = {
+                    left: [
+                        { cx: -knobOffset, cy: center - knobOffset, type: 'outer' },
+                        { cx: -knobOffset, cy: center + knobOffset, type: 'inner' }
+                    ],
+                    right: [
+                        { cx: squareSize + knobOffset, cy: center - knobOffset, type: 'inner' },
+                        { cx: squareSize + knobOffset, cy: center + knobOffset, type: 'outer' }
+                    ],
+                    top: [
+                        { cx: center - knobOffset, cy: -knobOffset, type: 'outer' },
+                        { cx: center + knobOffset, cy: -knobOffset, type: 'inner' }
+                    ],
+                    bottom: [
+                        { cx: center - knobOffset, cy: squareSize + knobOffset, type: 'inner' },
+                        { cx: center + knobOffset, cy: squareSize + knobOffset, type: 'outer' }
+                    ]
+                };
+                
+                // Create mask for holes
+                const defs = document.createElementNS(svgNS, 'defs');
+                const mask = document.createElementNS(svgNS, 'mask');
+                mask.setAttribute('id', `mask-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+                
+                // White background shows everything
+                const whiteBg = document.createElementNS(svgNS, 'rect');
+                whiteBg.setAttribute('x', '0');
+                whiteBg.setAttribute('y', '0');
+                whiteBg.setAttribute('width', squareSize);
+                whiteBg.setAttribute('height', squareSize);
+                whiteBg.setAttribute('fill', 'white');
+                mask.appendChild(whiteBg);
+                
+                // Add black circles for holes (holes = black in mask)
+                ['left', 'right', 'top', 'bottom'].forEach(side => {
+                    const conn = connections[side][pattern[side]];
+                    if (conn.type === 'inner') {
+                        const hole = document.createElementNS(svgNS, 'circle');
+                        hole.setAttribute('cx', conn.cx);
+                        hole.setAttribute('cy', conn.cy);
+                        hole.setAttribute('r', knobRadius);
+                        hole.setAttribute('fill', 'black');
+                        mask.appendChild(hole);
+                    }
+                });
+                
+                defs.appendChild(mask);
+                svg.appendChild(defs);
+                
+                // Base square with mask for holes
+                const square = document.createElementNS(svgNS, 'rect');
+                square.setAttribute('x', '0');
+                square.setAttribute('y', '0');
+                square.setAttribute('width', squareSize);
+                square.setAttribute('height', squareSize);
+                square.setAttribute('fill', color);
+                square.setAttribute('rx', '10');
+                square.setAttribute('ry', '10');
+                square.setAttribute('mask', `url(#${mask.getAttribute('id')})`);
+                svg.appendChild(square);
+                
+                // Add knobs (union operations)
+                ['left', 'right', 'top', 'bottom'].forEach(side => {
+                    const conn = connections[side][pattern[side]];
+                    if (conn.type === 'outer') {
+                        const knob = document.createElementNS(svgNS, 'circle');
+                        knob.setAttribute('cx', conn.cx);
+                        knob.setAttribute('cy', conn.cy);
+                        knob.setAttribute('r', knobRadius);
+                        knob.setAttribute('fill', color);
+                        
+                        // Add highlight for 3D effect
+                        const highlight = document.createElementNS(svgNS, 'circle');
+                        highlight.setAttribute('cx', conn.cx);
+                        highlight.setAttribute('cy', conn.cy);
+                        highlight.setAttribute('r', knobRadius * 0.7);
+                        highlight.setAttribute('fill', 
+                            color === '#000000' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)');
+                        
+                        svg.appendChild(knob);
+                        svg.appendChild(highlight);
+                    }
+                });
+                
+                // Add visual guides for connections
+                const guides = document.createElementNS(svgNS, 'g');
+                guides.setAttribute('opacity', '0.3');
+                
+                ['left', 'right', 'top', 'bottom'].forEach(side => {
+                    const conn = connections[side][pattern[side]];
+                    const guide = document.createElementNS(svgNS, 'circle');
+                    guide.setAttribute('cx', conn.cx);
+                    guide.setAttribute('cy', conn.cy);
+                    guide.setAttribute('r', knobRadius);
+                    guide.setAttribute('fill', 'none');
+                    guide.setAttribute('stroke', conn.type === 'inner' ? '#ff6b6b' : '#4CAF50');
+                    guide.setAttribute('stroke-width', '2');
+                    if (conn.type === 'inner') {
+                        guide.setAttribute('stroke-dasharray', '4,4');
+                    }
+                    guides.appendChild(guide);
+                });
+                
+                svg.appendChild(guides);
+                
+                return svg;
+            }
+
+            countKnobs(pattern) {
+                // Count how many sides have outer connectors (knobs)
+                let count = 0;
+                const sides = ['left', 'right', 'top', 'bottom'];
+                
+                // This assumes pattern 0 = outer, 1 = inner for simplicity
+                // In real implementation, check connector type
+                sides.forEach(side => {
+                    if (pattern[side] === 0) count++; // Adjust based on your actual mapping
+                });
+                
+                return count;
+            }
+
+            getPatternCode(pattern) {
+                return `${pattern.left}${pattern.right}${pattern.top}${pattern.bottom}`;
+            }
+
+            shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
+
+            // Generate lockers (starting pieces)
+            generateLockers(count = 4) {
+                this.lockedPositions.fill(false);
+                this.lockers = [];
+                
+                // Reset all pieces
+                this.pieceBank.forEach(piece => piece.used = false);
+                this.board.fill(null);
+                
+                // Generate locker positions
+                const positions = Array.from({length: this.totalCells}, (_, i) => i);
+                this.shuffleArray(positions);
+                
+                const lockerPositions = positions.slice(0, Math.min(count, positions.length));
+                
+                // Place lockers with correctly matching pieces
+                lockerPositions.forEach((pos, index) => {
+                    this.lockers.push(pos);
+                    this.lockedPositions[pos] = true;
+                    
+                    // Find an unused piece
+                    const availablePieces = this.pieceBank.filter(p => !p.used);
+                    if (availablePieces.length > 0) {
+                        const piece = availablePieces[0];
+                        this.placePiece(pos, piece.id, true);
+                    }
+                });
+                
+                this.updateLockersPreview();
+                this.render();
+                
+                // Show message
+                this.showMessage(`Generated ${lockerPositions.length} lockers! ${this.totalCells - lockerPositions.length} pieces remain in bank.`, 'success');
+            }
+
+            placePiece(boardIndex, pieceId, isLocker = false) {
+                const piece = this.pieceBank.find(p => p.id === pieceId);
+                if (!piece || piece.used) return false;
+                
+                // Save to history
+                this.moveHistory.push({
+                    boardIndex,
+                    pieceId,
+                    previousPiece: this.board[boardIndex],
+                    isLocker,
+                    timestamp: Date.now()
+                });
+                
+                // Mark piece as used
+                piece.used = true;
+                
+                // Place on board
+                this.board[boardIndex] = pieceId;
+                this.moveCount++;
+                
+                // Check if piece should lock
+                if (isLocker || this.lockers.includes(boardIndex) || this.shouldLock(boardIndex)) {
+                    this.lockedPositions[boardIndex] = true;
+                }
+                
+                this.render();
+                return true;
+            }
+
+            shouldLock(boardIndex) {
+                const row = Math.floor(boardIndex / this.boardSize);
+                const col = boardIndex % this.boardSize;
+                
+                const directions = [
+                    { dr: 0, dc: -1, side: 'left' },
+                    { dr: 0, dc: 1, side: 'right' },
+                    { dr: -1, dc: 0, side: 'top' },
+                    { dr: 1, dc: 0, side: 'bottom' }
+                ];
+                
+                for (const dir of directions) {
+                    const newRow = row + dir.dr;
+                    const newCol = col + dir.dc;
+                    
+                    if (newRow >= 0 && newRow < this.boardSize && 
+                        newCol >= 0 && newCol < this.boardSize) {
+                        const neighborIndex = newRow * this.boardSize + newCol;
+                        
+                        if (this.board[neighborIndex]) {
+                            if (!this.checkConnection(boardIndex, neighborIndex, dir.side)) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+                
+                // Check color balance for row and column
+                if (!this.checkColorBalance(boardIndex)) {
+                    return false;
+                }
+                
+                return true;
+            }
+
+            checkConnection(index1, index2, side) {
+                const piece1 = this.pieceBank.find(p => p.id === this.board[index1]);
+                const piece2 = this.pieceBank.find(p => p.id === this.board[index2]);
+                
+                if (!piece1 || !piece2) return true; // No piece to check against
+                
+                // Get opposite side
+                const oppositeSides = {
+                    'left': 'right',
+                    'right': 'left',
+                    'top': 'bottom',
+                    'bottom': 'top'
+                };
+                const oppositeSide = oppositeSides[side];
+                
+                // Check if pieces are complementary
+                // For knob-hole connection: one should be outer, one should be inner
+                const isKnob1 = piece1.pattern[side] === 0; // Adjust based on your pattern mapping
+                const isKnob2 = piece2.pattern[oppositeSide] === 0;
+                
+                // Knob must connect to hole (opposite states)
+                return isKnob1 !== isKnob2;
+            }
+
+            checkColorBalance(boardIndex) {
+                const row = Math.floor(boardIndex / this.boardSize);
+                const col = boardIndex % this.boardSize;
+                
+                // Count black/white in row
+                let blackInRow = 0, whiteInRow = 0;
+                for (let c = 0; c < this.boardSize; c++) {
+                    const idx = row * this.boardSize + c;
+                    const pieceId = this.board[idx];
+                    if (pieceId) {
+                        const piece = this.pieceBank.find(p => p.id === pieceId);
+                        if (piece.type === 'black') blackInRow++;
+                        else whiteInRow++;
+                    }
+                }
+                
+                // Count black/white in column
+                let blackInCol = 0, whiteInCol = 0;
+                for (let r = 0; r < this.boardSize; r++) {
+                    const idx = r * this.boardSize + col;
+                    const pieceId = this.board[idx];
+                    if (pieceId) {
+                        const piece = this.pieceBank.find(p => p.id === pieceId);
+                        if (piece.type === 'black') blackInCol++;
+                        else whiteInCol++;
+                    }
+                }
+                
+                // Takuzu rule: difference <= 1
+                return Math.abs(blackInRow - whiteInRow) <= 1 && 
+                       Math.abs(blackInCol - whiteInCol) <= 1;
+            }
+
+            removePiece(boardIndex) {
+                if (this.lockedPositions[boardIndex]) return false;
+                
+                const pieceId = this.board[boardIndex];
+                if (!pieceId) return false;
+                
+                // Save to history
+                this.moveHistory.push({
+                    boardIndex,
+                    pieceId: null,
+                    previousPiece: pieceId,
+                    isRemoval: true,
+                    timestamp: Date.now()
+                });
+                
+                // Mark piece as available
+                const piece = this.pieceBank.find(p => p.id === pieceId);
+                if (piece) piece.used = false;
+                
+                // Remove from board
+                this.board[boardIndex] = null;
+                this.moveCount++;
+                
+                this.render();
+                return true;
+            }
+
+            undoMove() {
+                if (this.moveHistory.length === 0) {
+                    this.showMessage("No moves to undo", "info");
+                    return false;
+                }
+                
+                const lastMove = this.moveHistory.pop();
+                
+                if (lastMove.isRemoval) {
+                    // Undo removal
+                    const piece = this.pieceBank.find(p => p.id === lastMove.previousPiece);
+                    if (piece) piece.used = true;
+                    this.board[lastMove.boardIndex] = lastMove.previousPiece;
+                } else {
+                    // Undo placement
+                    const piece = this.pieceBank.find(p => p.id === lastMove.pieceId);
+                    if (piece) piece.used = false;
+                    
+                    this.board[lastMove.boardIndex] = lastMove.previousPiece;
+                    
+                    // Unlock if not a locker
+                    if (!lastMove.isLocker && !this.lockers.includes(lastMove.boardIndex)) {
+                        this.lockedPositions[lastMove.boardIndex] = false;
+                    }
+                }
+                
+                this.moveCount--;
+                this.render();
+                
+                this.showMessage("Move undone", "success");
+                return true;
+            }
+
+            clearBoard() {
+                if (!confirm("Clear all non-locker pieces?")) return;
+                
+                for (let i = 0; i < this.totalCells; i++) {
+                    if (!this.lockedPositions[i]) {
+                        const pieceId = this.board[i];
+                        if (pieceId) {
+                            const piece = this.pieceBank.find(p => p.id === pieceId);
+                            if (piece) piece.used = false;
+                            this.board[i] = null;
+                        }
+                    }
+                }
+                
+                this.moveHistory = [];
+                this.render();
+                
+                this.showMessage("Board cleared", "success");
+            }
+
+            checkSolution() {
+                // Check all cells filled
+                const emptyCells = this.board.filter(cell => !cell).length;
+                if (emptyCells > 0) {
+                    this.showMessage(`${emptyCells} cells remaining to fill`, "error");
+                    return false;
+                }
+                
+                // Check Takuzu rules
+                const errors = [];
+                
+                for (let i = 0; i < this.boardSize; i++) {
+                    const rowPieces = this.getRowPieces(i);
+                    const colPieces = this.getColumnPieces(i);
+                    
+                    const rowBalance = this.checkRowColBalance(rowPieces);
+                    const colBalance = this.checkRowColBalance(colPieces);
+                    
+                    if (!rowBalance) errors.push(`Row ${i + 1} color imbalance`);
+                    if (!colBalance) errors.push(`Column ${i + 1} color imbalance`);
+                    
+                    // Check no identical adjacent
+                    for (let j = 0; j < this.boardSize - 1; j++) {
+                        if (rowPieces[j] && rowPieces[j + 1]) {
+                            const piece1 = this.pieceBank.find(p => p.id === rowPieces[j]);
+                            const piece2 = this.pieceBank.find(p => p.id === rowPieces[j + 1]);
+                            if (piece1.code === piece2.code) {
+                                errors.push(`Row ${i + 1}: identical pieces at ${j + 1}-${j + 2}`);
+                            }
+                        }
+                    }
+                }
+                
+                // Check connections
+                for (let i = 0; i < this.totalCells; i++) {
+                    if (!this.checkAllConnections(i)) {
+                        errors.push(`Piece at position ${i + 1} has bad connection`);
+                    }
+                }
+                
+                if (errors.length === 0) {
+                    this.showMessage("🎉 PUZZLE SOLVED! Perfect connections!", "success");
+                    return true;
+                } else {
+                    this.showMessage("❌ " + errors.slice(0, 3).join('\n'), "error");
+                    return false;
+                }
+            }
+
+            getRowPieces(row) {
+                const start = row * this.boardSize;
+                return this.board.slice(start, start + this.boardSize);
+            }
+
+            getColumnPieces(col) {
+                const pieces = [];
+                for (let row = 0; row < this.boardSize; row++) {
+                    pieces.push(this.board[row * this.boardSize + col]);
+                }
+                return pieces;
+            }
+
+            checkRowColBalance(pieces) {
+                const black = pieces.filter(id => {
+                    const piece = this.pieceBank.find(p => p.id === id);
+                    return piece && piece.type === 'black';
+                }).length;
+                
+                const white = pieces.filter(id => {
+                    const piece = this.pieceBank.find(p => p.id === id);
+                    return piece && piece.type === 'white';
+                }).length;
+                
+                return Math.abs(black - white) <= 1;
+            }
+
+            checkAllConnections(boardIndex) {
+                const row = Math.floor(boardIndex / this.boardSize);
+                const col = boardIndex % this.boardSize;
+                
+                const directions = [
+                    { dr: 0, dc: -1, side: 'left' },
+                    { dr: 0, dc: 1, side: 'right' },
+                    { dr: -1, dc: 0, side: 'top' },
+                    { dr: 1, dc: 0, side: 'bottom' }
+                ];
+                
+                for (const dir of directions) {
+                    const newRow = row + dir.dr;
+                    const newCol = col + dir.dc;
+                    
+                    if (newRow >= 0 && newRow < this.boardSize && 
+                        newCol >= 0 && newCol < this.boardSize) {
+                        const neighborIndex = newRow * this.boardSize + newCol;
+                        
+                        if (this.board[neighborIndex]) {
+                            if (!this.checkConnection(boardIndex, neighborIndex, dir.side)) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+                
+                return true;
+            }
+
+            updateStats() {
+                const placed = this.board.filter(Boolean).length;
+                const locked = this.lockedPositions.filter(Boolean).length;
+                const remaining = this.pieceBank.filter(p => !p.used).length;
+                
+                document.getElementById('placed-count').textContent = placed;
+                document.getElementById('locked-count').textContent = locked;
+                document.getElementById('remaining-count').textContent = remaining;
+                document.getElementById('available-count').textContent = remaining;
+                document.getElementById('moves-count').textContent = this.moveCount;
+                document.getElementById('lockers-count').textContent = this.lockers.length;
+            }
+
+            updateLockersPreview() {
+                const preview = document.getElementById('lockers-preview');
+                preview.innerHTML = '';
+                
+                for (let i = 0; i < this.totalCells; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'locker-cell';
+                    if (this.lockers.includes(i)) {
+                        cell.classList.add('filled');
+                        cell.textContent = '🔒';
+                    }
+                    preview.appendChild(cell);
+                }
+            }
+
+            render() {
+                this.renderBoard();
+                this.renderBank();
+                this.updateStats();
+                this.setupDragAndDrop();
+            }
+
+            renderBoard() {
+                const boardEl = document.getElementById('board');
+                boardEl.style.gridTemplateColumns = `repeat(${this.boardSize}, 1fr)`;
+                boardEl.innerHTML = '';
+                
+                for (let i = 0; i < this.totalCells; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'board-cell';
+                    cell.dataset.index = i;
+                    
+                    if (this.board[i]) {
+                        cell.classList.add('placed');
+                        const piece = this.pieceBank.find(p => p.id === this.board[i]);
+                        if (piece) {
+                            cell.appendChild(piece.svg.cloneNode(true));
+                        }
+                    }
+                    
+                    if (this.lockedPositions[i]) {
+                        cell.classList.add('locked');
+                    }
+                    
+                    // Make droppable
+                    cell.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                    });
+                    
+                    cell.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        const pieceId = e.dataTransfer.getData('pieceId');
+                        if (pieceId) {
+                            if (!this.placePiece(i, pieceId)) {
+                                cell.classList.add('invalid');
+                                setTimeout(() => cell.classList.remove('invalid'), 500);
+                            }
+                        }
+                    });
+                    
+                    cell.addEventListener('click', () => {
+                        if (this.board[i] && !this.lockedPositions[i]) {
+                            this.removePiece(i);
+                        }
+                    });
+                    
+                    boardEl.appendChild(cell);
+                }
+            }
+
+            renderBank() {
+                const bankEl = document.getElementById('piece-bank');
+                bankEl.innerHTML = '';
+                
+                this.pieceBank.forEach(piece => {
+                    const pieceEl = document.createElement('div');
+                    pieceEl.className = 'bank-piece';
+                    pieceEl.dataset.pieceId = piece.id;
+                    
+                    if (piece.used) {
+                        pieceEl.classList.add('used');
+                    }
+                    
+                    pieceEl.appendChild(piece.svg.cloneNode(true));
+                    
+                    // Make draggable
+                    pieceEl.setAttribute('draggable', !piece.used);
+                    pieceEl.addEventListener('dragstart', (e) => {
+                        if (!piece.used) {
+                            e.dataTransfer.setData('pieceId', piece.id);
+                            pieceEl.classList.add('dragging');
+                        }
+                    });
+                    
+                    pieceEl.addEventListener('dragend', () => {
+                        pieceEl.classList.remove('dragging');
+                    });
+                    
+                    bankEl.appendChild(pieceEl);
+                });
+            }
+
+            setupDragAndDrop() {
+                // Already handled in render methods
+            }
+
+            showMessage(text, type) {
+                const message = document.createElement('div');
+                message.textContent = text;
+                message.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    padding: 15px 25px;
+                    border-radius: 10px;
+                    background: ${type === 'success' ? '#4CAF50' : 
+                                 type === 'error' ? '#f44336' : 
+                                 type === 'info' ? '#2196F3' : '#112240'};
+                    color: white;
+                    z-index: 1000;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                    animation: fadeIn 0.3s ease;
+                    max-width: 90%;
+                    text-align: center;
+                `;
+                
+                document.body.appendChild(message);
+                
+                setTimeout(() => {
+                    message.style.opacity = '0';
+                    message.style.transition = 'opacity 0.3s ease';
+                    setTimeout(() => message.remove(), 300);
+                }, 3000);
+            }
+        }
+
+        // Initialize game
+        let game = new JuzzleSuzuku(4);
+
+        // UI Functions
+        function newGame(size) {
+            game = new JuzzleSuzuku(size);
+            document.querySelector('.board-section .section-title').textContent = `Game Board (${size}×${size})`;
+        }
+
+        function generateLockers() {
+            game.generateLockers(5); // 5 lockers as requested
+        }
+
+        function undoMove() {
+            game.undoMove();
+        }
+
+        function clearBoard() {
+            game.clearBoard();
+        }
+
+        function checkSolution() {
+            game.checkSolution();
+        }
+
+        function toggleInstructions() {
+            const content = document.querySelector('.instructions-content');
+            content.classList.toggle('collapsed');
+        }
+
+        function toggleMobileMenu() {
+            const controls = document.getElementById('header-controls');
+            controls.classList.toggle('visible');
+        }
+
+        // Mobile optimizations
+        document.addEventListener('touchmove', (e) => {
+            if (e.target.classList.contains('bank-piece')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // Initialize with some lockers
+        setTimeout(() => generateLockers(), 1000);
+
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translate(-50%, -10px); }
+                to { opacity: 1; transform: translate(-50%, 0); }
+            }
+            
+            @media (max-width: 767px) {
+                #header-controls {
+                    display: none;
+                    flex-direction: column;
+                    gap: 10px;
+                    margin-top: 15px;
+                    width: 100%;
+                }
+                
+                #header-controls.visible {
+                    display: flex;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html> 
