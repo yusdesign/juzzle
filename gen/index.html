@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Juzzle Generator - Boolean Operations</title>
+    <style>
+        body { margin: 20px; font-family: sans-serif; background: #1a1a1a; color: #fff; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { color: #4A90E2; }
+        .controls {
+            margin: 20px 0;
+            padding: 20px;
+            background: #2d2d2d;
+            border-radius: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #4A90E2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover { background: #357ABD; }
+        #grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .piece-container {
+            background: #2d2d2d;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .piece-svg {
+            width: 100%;
+            height: 200px;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+        }
+        .piece-info {
+            margin-top: 10px;
+            color: #aaa;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎲 Juzzle Piece Generator (Boolean Operations)</h1>
+        
+        <div class="controls">
+            <button onclick="generateGrid(4, 4)">Generate 4×4 Grid</button>
+            <button onclick="generateGrid(5, 5)">Generate 5×5 Grid</button>
+            <button onclick="generateGrid(6, 4)">Generate 6×4 Grid (24 pieces)</button>
+            <button onclick="exportAll()">Export All Pieces</button>
+            <button onclick="location.reload()">Randomize All</button>
+        </div>
+        
+        <div id="grid-container"></div>
+    </div>
+
+    <script>
+        class BooleanJuzzlePiece {
+            constructor() {
+                this.squareSize = 200; // Reduced for display
+                this.knobRadius = 35;
+                this.knobOffset = 45;
+                this.center = this.squareSize / 2;
+                
+                // 8 connection points
+                this.connections = [
+                    // Left
+                    { x: -this.knobOffset, y: this.center - this.knobOffset, side: 'left', pos: 'top' },
+                    { x: -this.knobOffset, y: this.center + this.knobOffset, side: 'left', pos: 'bottom' },
+                    // Right
+                    { x: this.squareSize + this.knobOffset, y: this.center - this.knobOffset, side: 'right', pos: 'top' },
+                    { x: this.squareSize + this.knobOffset, y: this.center + this.knobOffset, side: 'right', pos: 'bottom' },
+                    // Top
+                    { x: this.center - this.knobOffset, y: -this.knobOffset, side: 'top', pos: 'left' },
+                    { x: this.center + this.knobOffset, y: -this.knobOffset, side: 'top', pos: 'right' },
+                    // Bottom
+                    { x: this.center - this.knobOffset, y: this.squareSize + this.knobOffset, side: 'bottom', pos: 'left' },
+                    { x: this.center + this.knobOffset, y: this.squareSize + this.knobOffset, side: 'bottom', pos: 'right' }
+                ];
+            }
+
+            // Generate pattern ensuring connectability
+            generatePattern() {
+                let pattern = this.connections.map(() => Math.random() > 0.5 ? 'knob' : 'hole');
+                
+                // Ensure each side has both knobs and holes for solvability
+                ['left', 'right', 'top', 'bottom'].forEach(side => {
+                    const sideIndices = this.connections
+                        .map((conn, i) => conn.side === side ? i : -1)
+                        .filter(i => i !== -1);
+                    
+                    const sideTypes = sideIndices.map(i => pattern[i]);
+                    const hasKnob = sideTypes.includes('knob');
+                    const hasHole = sideTypes.includes('hole');
+                    
+                    // If all same, make it alternating
+                    if (!hasKnob || !hasHole) {
+                        sideIndices.forEach((idx, i) => {
+                            pattern[idx] = i % 2 === 0 ? 'knob' : 'hole';
+                        });
+                    }
+                });
+                
+                return pattern;
+            }
+
+            // Create SVG path using boolean operations
+            createSVGPath(pattern, color) {
+                // Start with square path
+                let path = `M0,0 L${this.squareSize},0 L${this.squareSize},${this.squareSize} L0,${this.squareSize} Z`;
+                
+                // Add knobs (union operations - append circles)
+                this.connections.forEach((conn, i) => {
+                    if (pattern[i] === 'knob') {
+                        // Add circle to path (union)
+                        const r = this.knobRadius;
+                        const x = conn.x;
+                        const y = conn.y;
+                        // SVG circle as path
+                        path += ` M ${x + r},${y}` +
+                                ` A ${r},${r} 0 1,0 ${x - r},${y}` +
+                                ` A ${r},${r} 0 1,0 ${x + r},${y} Z`;
+                    }
+                });
+                
+                // For holes, we'd need to use mask or clip-path
+                // Here we'll use clip-path approach for holes
+                return path;
+            }
+
+            // Create complete SVG with proper cutouts (holes)
+            createSVG(pattern, id, color) {
+                const svgNS = "http://www.w3.org/2000/svg";
+                const svg = document.createElementNS(svgNS, 'svg');
+                svg.setAttribute('viewBox', `-50 -50 ${this.squareSize + 100} ${this.squareSize + 100}`);
+                svg.setAttribute('width', '200');
+                svg.setAttribute('height', '200');
+                svg.setAttribute('class', 'piece-svg');
+                
+                // Create defs for clipping (holes)
+                const defs = document.createElementNS(svgNS, 'defs');
+                const clipPath = document.createElementNS(svgNS, 'clipPath');
+                clipPath.setAttribute('id', `clip-${id}`);
+                
+                // Base shape (square + knobs)
+                const basePath = document.createElementNS(svgNS, 'path');
+                basePath.setAttribute('d', this.createSVGPath(pattern, color));
+                clipPath.appendChild(basePath.cloneNode(true));
+                defs.appendChild(clipPath);
+                svg.appendChild(defs);
+                
+                // Apply clipping to show holes
+                const g = document.createElementNS(svgNS, 'g');
+                g.setAttribute('clip-path', `url(#clip-${id})`);
+                
+                // Solid filled piece
+                const piece = document.createElementNS(svgNS, 'path');
+                piece.setAttribute('d', this.createSVGPath(pattern, color));
+                piece.setAttribute('fill', color);
+                piece.setAttribute('stroke', '#fff');
+                piece.setAttribute('stroke-width', '4');
+                g.appendChild(piece);
+                
+                svg.appendChild(g);
+                
+                // Add visual indicators for holes (semi-transparent)
+                this.connections.forEach((conn, i) => {
+                    if (pattern[i] === 'hole') {
+                        const hole = document.createElementNS(svgNS, 'circle');
+                        hole.setAttribute('cx', conn.x);
+                        hole.setAttribute('cy', conn.y);
+                        hole.setAttribute('r', this.knobRadius);
+                        hole.setAttribute('fill', color);
+                        hole.setAttribute('fill-opacity', '0.3');
+                        hole.setAttribute('stroke', '#fff');
+                        hole.setAttribute('stroke-width', '2');
+                        hole.setAttribute('stroke-dasharray', '4,4');
+                        svg.appendChild(hole);
+                    }
+                });
+                
+                return svg;
+            }
+
+            // Generate pattern string (for display)
+            getPatternString(pattern) {
+                const sides = ['L', 'R', 'T', 'B']; // Left, Right, Top, Bottom
+                let str = '';
+                this.connections.forEach((conn, i) => {
+                    const sideIdx = ['left', 'right', 'top', 'bottom'].indexOf(conn.side);
+                    str += sides[sideIdx] + (conn.pos === 'top' || conn.pos === 'left' ? '1' : '2');
+                    str += pattern[i] === 'knob' ? 'K' : 'H';
+                    str += ' ';
+                });
+                return str.trim();
+            }
+        }
+
+        // Color palette
+        const colors = [
+            '#4A90E2', '#2ECC71', '#E74C3C', '#F39C12',
+            '#9B59B6', '#1ABC9C', '#E67E22', '#3498DB',
+            '#27AE60', '#D35400', '#8E44AD', '#16A085',
+            '#2980B9', '#C0392B', '#7F8C8D', '#F1C40F',
+            '#2C3E50', '#95A5A6', '#D68910', '#AED6F1',
+            '#A569BD', '#45B39D', '#EB984E', '#5DADE2'
+        ];
+
+        // Generate grid of pieces
+        function generateGrid(rows, cols) {
+            const container = document.getElementById('grid-container');
+            container.innerHTML = '';
+            
+            const totalPieces = rows * cols;
+            const generator = new BooleanJuzzlePiece();
+            
+            for (let i = 0; i < totalPieces; i++) {
+                const pattern = generator.generatePattern();
+                const color = colors[i % colors.length];
+                
+                // Create piece container
+                const pieceDiv = document.createElement('div');
+                pieceDiv.className = 'piece-container';
+                
+                // Create SVG
+                const svg = generator.createSVG(pattern, i, color);
+                pieceDiv.appendChild(svg);
+                
+                // Add info
+                const info = document.createElement('div');
+                info.className = 'piece-info';
+                info.textContent = `Piece ${i + 1}: ${generator.getPatternString(pattern)}`;
+                pieceDiv.appendChild(info);
+                
+                container.appendChild(pieceDiv);
+            }
+        }
+
+        // Export all pieces as individual SVGs
+        function exportAll() {
+            const generator = new BooleanJuzzlePiece();
+            const pieces = document.querySelectorAll('.piece-container');
+            
+            pieces.forEach((pieceDiv, i) => {
+                // Generate fresh pattern for export
+                const pattern = generator.generatePattern();
+                const color = colors[i % colors.length];
+                const svg = generator.createSVG(pattern, `export-${i}`, color);
+                
+                // Convert to string
+                const serializer = new XMLSerializer();
+                const svgString = serializer.serializeToString(svg);
+                
+                // Create download
+                const blob = new Blob([svgString], { type: 'image/svg+xml' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `juzzle-piece-${i + 1}.svg`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+            
+            alert(`${pieces.length} pieces exported as separate SVG files`);
+        }
+
+        // Initialize with 4×4 grid
+        generateGrid(4, 4);
+    </script>
+</body>
+</html> 
