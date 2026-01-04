@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Juzzle Game Generator - Hybrid Rules</title>
+    <style>
+        body { margin: 0; padding: 20px; background: #111; color: #eee; font-family: monospace; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { color: #0af; text-align: center; margin: 20px 0; }
+        .subtitle { text-align: center; color: #888; margin-bottom: 30px; }
+        
+        .game-container {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 30px;
+            margin-top: 30px;
+        }
+        
+        .board-section {
+            background: #222;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .bank-section {
+            background: #222;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-y: auto;
+            max-height: 800px;
+        }
+        
+        .controls {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: #222;
+            border-radius: 10px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            margin: 8px;
+            background: #0a5;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        button:hover { background: #0c6; }
+        button.secondary { background: #333; }
+        button.secondary:hover { background: #444; }
+        
+        #board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        #piece-bank {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .cell {
+            background: #181818;
+            border: 2px solid #333;
+            border-radius: 8px;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .cell:hover { border-color: #0af; }
+        .cell.placed { border-color: #0a5; }
+        .cell.locked { border-color: #ff4500; background: rgba(255, 69, 0, 0.1); }
+        .cell.invalid { border-color: #f00; animation: shake 0.5s; }
+        
+        .bank-piece {
+            background: #181818;
+            border: 2px solid #444;
+            border-radius: 8px;
+            aspect-ratio: 1;
+            cursor: grab;
+            transition: all 0.2s;
+        }
+        
+        .bank-piece:hover { border-color: #0af; transform: scale(1.05); }
+        .bank-piece.dragging { opacity: 0.5; }
+        .bank-piece.used { opacity: 0.3; cursor: not-allowed; }
+        
+        .bank-piece.black { border-color: #000; }
+        .bank-piece.white { border-color: #666; }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+            padding: 15px;
+            background: #181818;
+            border-radius: 8px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #0af;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .rules {
+            margin-top: 30px;
+            padding: 20px;
+            background: #222;
+            border-radius: 10px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .rule-item {
+            margin: 10px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .rule-item:before {
+            content: "•";
+            color: #0a5;
+            position: absolute;
+            left: 0;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧩 Juzzle Game Generator - Hybrid Rules</h1>
+        <div class="subtitle">Takuzu-like puzzle with black/white pieces</div>
+        
+        <div class="controls">
+            <button onclick="newGame(4)">🎮 New 4×4 Game</button>
+            <button onclick="newGame(6)" class="secondary">🎮 New 6×6 Game</button>
+            <button onclick="checkSolution()" class="secondary">✅ Check Solution</button>
+            <button onclick="exportGame()" class="secondary">💾 Export Game</button>
+        </div>
+        
+        <div class="game-container">
+            <div class="board-section">
+                <h3>Game Board (4×4)</h3>
+                <div id="board"></div>
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="placed-count">0</div>
+                        <div class="stat-label">Pieces Placed</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="locked-count">0</div>
+                        <div class="stat-label">Pieces Locked</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="black-count">0</div>
+                        <div class="stat-label">Black Pieces</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="white-count">0</div>
+                        <div class="stat-label">White Pieces</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bank-section">
+                <h3>Piece Bank</h3>
+                <div id="piece-bank"></div>
+                <div style="margin-top: 20px; font-size: 12px; color: #888;">
+                    Drag pieces from bank to board
+                </div>
+            </div>
+        </div>
+        
+        <div class="rules">
+            <h3>📜 Game Rules:</h3>
+            <div class="rule-item">Board is 4×4 (or 6×6) grid - must fill all cells</div>
+            <div class="rule-item">Piece bank has equal black/white pieces (Takuzu rule)</div>
+            <div class="rule-item">Pieces lock when placed correctly (0hh1-style)</div>
+            <div class="rule-item">Connecting knobs must match holes on adjacent pieces</div>
+            <div class="rule-item">No identical pieces can be adjacent (Sudoku rule)</div>
+            <div class="rule-item">Complete puzzle by placing all pieces correctly</div>
+        </div>
+    </div>
+
+    <script>
+        // Game configuration
+        const CONFIG = {
+            boardSize: 4,
+            colors: {
+                black: '#000000',
+                white: '#ffffff'
+            },
+            template: {
+                square: { x: 373.83, y: 381.35, width: 355.32, height: 355.32 },
+                sides: {
+                    left: [
+                        { cx: 331.55, cy: 559.01, type: 'outer' },
+                        { cx: 414.33, cy: 559.01, type: 'inner' }
+                    ],
+                    right: [
+                        { cx: 688.86, cy: 559.01, type: 'inner' },
+                        { cx: 771.64, cy: 559.01, type: 'outer' }
+                    ],
+                    top: [
+                        { cx: 551.49, cy: 336.84, type: 'outer' },
+                        { cx: 551.49, cy: 419.63, type: 'inner' }
+                    ],
+                    bottom: [
+                        { cx: 551.49, cy: 694.15, type: 'inner' },
+                        { cx: 551.49, cy: 776.94, type: 'outer' }
+                    ]
+                },
+                radius: 64.65
+            }
+        };
+
+        class JuzzleGame {
+            constructor(boardSize = 4) {
+                this.boardSize = boardSize;
+                this.totalCells = boardSize * boardSize;
+                this.board = Array(this.totalCells).fill(null);
+                this.locked = Array(this.totalCells).fill(false);
+                this.pieceBank = [];
+                this.selectedPiece = null;
+                this.draggingPiece = null;
+                
+                this.initGame();
+                this.render();
+            }
+            
+            initGame() {
+                // Generate unique pieces for bank (50% black, 50% white)
+                const totalPieces = this.totalCells;
+                const blackCount = Math.floor(totalPieces / 2);
+                const whiteCount = totalPieces - blackCount;
+                
+                // Generate black pieces
+                for (let i = 0; i < blackCount; i++) {
+                    const piece = this.generateUniquePiece(CONFIG.colors.black);
+                    this.pieceBank.push({
+                        ...piece,
+                        id: `black-${i}`,
+                        used: false,
+                        colorType: 'black'
+                    });
+                }
+                
+                // Generate white pieces
+                for (let i = 0; i < whiteCount; i++) {
+                    const piece = this.generateUniquePiece(CONFIG.colors.white);
+                    this.pieceBank.push({
+                        ...piece,
+                        id: `white-${i}`,
+                        used: false,
+                        colorType: 'white'
+                    });
+                }
+                
+                // Shuffle bank
+                this.shuffleBank();
+            }
+            
+            generateUniquePiece(color) {
+                const pattern = {
+                    left: Math.random() > 0.5 ? 0 : 1,
+                    right: Math.random() > 0.5 ? 0 : 1,
+                    top: Math.random() > 0.5 ? 0 : 1,
+                    bottom: Math.random() > 0.5 ? 0 : 1
+                };
+                
+                // Create SVG for piece
+                const svg = this.createPieceSVG(pattern, color);
+                
+                return {
+                    pattern,
+                    color,
+                    svg,
+                    code: this.getPatternCode(pattern)
+                };
+            }
+            
+            createPieceSVG(pattern, color) {
+                const svgNS = "http://www.w3.org/2000/svg";
+                const svg = document.createElementNS(svgNS, 'svg');
+                svg.setAttribute('viewBox', '0 0 355.32 355.32');
+                svg.setAttribute('width', '100%');
+                svg.setAttribute('height', '100%');
+                
+                // Calculate normalized coordinates
+                const square = { x: 0, y: 0, width: 355.32, height: 355.32 };
+                const radius = 64.65;
+                const sides = {
+                    left: [
+                        { cx: 331.55 - 373.83, cy: 559.01 - 381.35, type: 'outer' },
+                        { cx: 414.33 - 373.83, cy: 559.01 - 381.35, type: 'inner' }
+                    ],
+                    right: [
+                        { cx: 688.86 - 373.83, cy: 559.01 - 381.35, type: 'inner' },
+                        { cx: 771.64 - 373.83, cy: 559.01 - 381.35, type: 'outer' }
+                    ],
+                    top: [
+                        { cx: 551.49 - 373.83, cy: 336.84 - 381.35, type: 'outer' },
+                        { cx: 551.49 - 373.83, cy: 419.63 - 381.35, type: 'inner' }
+                    ],
+                    bottom: [
+                        { cx: 551.49 - 373.83, cy: 694.15 - 381.35, type: 'inner' },
+                        { cx: 551.49 - 373.83, cy: 776.94 - 381.35, type: 'outer' }
+                    ]
+                };
+                
+                // Create mask for holes
+                const defs = document.createElementNS(svgNS, 'defs');
+                const mask = document.createElementNS(svgNS, 'mask');
+                mask.setAttribute('id', `mask-${Date.now()}-${Math.random()}`);
+                
+                const whiteBg = document.createElementNS(svgNS, 'rect');
+                whiteBg.setAttribute('x', '0');
+                whiteBg.setAttribute('y', '0');
+                whiteBg.setAttribute('width', '100%');
+                whiteBg.setAttribute('height', '100%');
+                whiteBg.setAttribute('fill', 'white');
+                mask.appendChild(whiteBg);
+                
+                // Add holes (inner circles)
+                ['left', 'right', 'top', 'bottom'].forEach(side => {
+                    const circle = sides[side][pattern[side]];
+                    if (circle.type === 'inner') {
+                        const hole = document.createElementNS(svgNS, 'circle');
+                        hole.setAttribute('cx', circle.cx);
+                        hole.setAttribute('cy', circle.cy);
+                        hole.setAttribute('r', radius);
+                        hole.setAttribute('fill', 'black');
+                        mask.appendChild(hole);
+                    }
+                });
+                
+                defs.appendChild(mask);
+                svg.appendChild(defs);
+                
+                // Base square with mask
+                const squareRect = document.createElementNS(svgNS, 'rect');
+                squareRect.setAttribute('x', '0');
+                squareRect.setAttribute('y', '0');
+                squareRect.setAttribute('width', square.width);
+                squareRect.setAttribute('height', square.height);
+                squareRect.setAttribute('fill', color);
+                squareRect.setAttribute('mask', `url(#${mask.getAttribute('id')})`);
+                svg.appendChild(squareRect);
+                
+                // Add knobs (outer circles)
+                ['left', 'right', 'top', 'bottom'].forEach(side => {
+                    const circle = sides[side][pattern[side]];
+                    if (circle.type === 'outer') {
+                        const knob = document.createElementNS(svgNS, 'circle');
+                        knob.setAttribute('cx', circle.cx);
+                        knob.setAttribute('cy', circle.cy);
+                        knob.setAttribute('r', radius);
+                        knob.setAttribute('fill', color);
+                        svg.appendChild(knob);
+                    }
+                });
+                
+                return svg;
+            }
+            
+            getPatternCode(pattern) {
+                return `${pattern.left}${pattern.right}${pattern.top}${pattern.bottom}`;
+            }
+            
+            shuffleBank() {
+                for (let i = this.pieceBank.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [this.pieceBank[i], this.pieceBank[j]] = [this.pieceBank[j], this.pieceBank[i]];
+                }
+            }
+            
+            canPlacePiece(boardIndex, piece) {
+                if (this.locked[boardIndex]) return false;
+                
+                // Check if piece already used
+                if (piece.used) return false;
+                
+                const row = Math.floor(boardIndex / this.boardSize);
+                const col = boardIndex % this.boardSize;
+                
+                // Check adjacent pieces
+                const neighbors = [
+                    { dir: 'left', checkIndex: boardIndex - 1, needSide: 'right', otherSide: 'left' },
+                    { dir: 'right', checkIndex: boardIndex + 1, needSide: 'left', otherSide: 'right' },
+                    { dir: 'top', checkIndex: boardIndex - this.boardSize, needSide: 'bottom', otherSide: 'top' },
+                    { dir: 'bottom', checkIndex: boardIndex + this.boardSize, needSide: 'top', otherSide: 'bottom' }
+                ];
+                
+                for (const neighbor of neighbors) {
+                    if (this.board[neighbor.checkIndex]) {
+                        const neighborPiece = this.pieceBank.find(p => p.id === this.board[neighbor.checkIndex]);
+                        
+                        // Takuzu rule: No identical adjacent pieces
+                        if (neighborPiece.code === piece.code) {
+                            return false;
+                        }
+                        
+                        // Check knob/hole compatibility
+                        if (!this.checkConnection(piece, neighborPiece, neighbor.needSide, neighbor.otherSide)) {
+                            return false;
+                        }
+                    }
+                }
+                
+                return true;
+            }
+            
+            checkConnection(piece1, piece2, side1, side2) {
+                // Get circle types for the connecting sides
+                const sides = ['left', 'right', 'top', 'bottom'];
+                const template = CONFIG.template.sides;
+                
+                const circle1 = template[side1][piece1.pattern[side1]];
+                const circle2 = template[side2][piece2.pattern[side2]];
+                
+                // Knob must connect to hole (opposite types)
+                return circle1.type !== circle2.type;
+            }
+            
+            placePiece(boardIndex, pieceId) {
+                const pieceIndex = this.pieceBank.findIndex(p => p.id === pieceId);
+                if (pieceIndex === -1 || this.pieceBank[pieceIndex].used) return false;
+                
+                const piece = this.pieceBank[pieceIndex];
+                
+                if (this.canPlacePiece(boardIndex, piece)) {
+                    this.board[boardIndex] = pieceId;
+                    this.pieceBank[pieceIndex].used = true;
+                    
+                    // Check if piece should lock
+                    if (this.shouldLockPiece(boardIndex)) {
+                        this.locked[boardIndex] = true;
+                    }
+                    
+                    this.render();
+                    return true;
+                }
+                
+                return false;
+            }
+            
+            shouldLockPiece(boardIndex) {
+                // Piece locks if all adjacent connections are valid
+                const row = Math.floor(boardIndex / this.boardSize);
+                const col = boardIndex % this.boardSize;
+                
+                const checks = [];
+                if (col > 0) checks.push(boardIndex - 1);
+                if (col < this.boardSize - 1) checks.push(boardIndex + 1);
+                if (row > 0) checks.push(boardIndex - this.boardSize);
+                if (row < this.boardSize - 1) checks.push(boardIndex + this.boardSize);
+                
+                return checks.every(index => this.board[index] !== null);
+            }
+            
+            removePiece(boardIndex) {
+                if (this.locked[boardIndex]) return false;
+                
+                const pieceId = this.board[boardIndex];
+                if (!pieceId) return false;
+                
+                const pieceIndex = this.pieceBank.findIndex(p => p.id === pieceId);
+                if (pieceIndex !== -1) {
+                    this.pieceBank[pieceIndex].used = false;
+                }
+                
+                this.board[boardIndex] = null;
+                this.render();
+                return true;
+            }
+            
+            checkSolution() {
+                let valid = true;
+                const feedback = [];
+                
+                // Check all cells are filled
+                if (this.board.some(cell => cell === null)) {
+                    feedback.push("Not all cells are filled");
+                    valid = false;
+                }
+                
+                // Check Takuzu rule: equal black/white count per row/column
+                for (let i = 0; i < this.boardSize; i++) {
+                    // Check row
+                    const rowPieces = this.board.slice(i * this.boardSize, (i + 1) * this.boardSize)
+                        .map(id => this.pieceBank.find(p => p.id === id))
+                        .filter(Boolean);
+                    
+                    const blackInRow = rowPieces.filter(p => p.colorType === 'black').length;
+                    const whiteInRow = rowPieces.filter(p => p.colorType === 'white').length;
+                    
+                    if (Math.abs(blackInRow - whiteInRow) > 1) {
+                        feedback.push(`Row ${i + 1} doesn't have balanced black/white pieces`);
+                        valid = false;
+                    }
+                    
+                    // Check column
+                    const colPieces = [];
+                    for (let j = 0; j < this.boardSize; j++) {
+                        const pieceId = this.board[j * this.boardSize + i];
+                        if (pieceId) {
+                            const piece = this.pieceBank.find(p => p.id === pieceId);
+                            if (piece) colPieces.push(piece);
+                        }
+                    }
+                    
+                    const blackInCol = colPieces.filter(p => p.colorType === 'black').length;
+                    const whiteInCol = colPieces.filter(p => p.colorType === 'white').length;
+                    
+                    if (Math.abs(blackInCol - whiteInCol) > 1) {
+                        feedback.push(`Column ${i + 1} doesn't have balanced black/white pieces`);
+                        valid = false;
+                    }
+                }
+                
+                // Check no identical adjacent pieces
+                for (let i = 0; i < this.totalCells; i++) {
+                    if (!this.board[i]) continue;
+                    
+                    const piece = this.pieceBank.find(p => p.id === this.board[i]);
+                    const neighbors = [
+                        i - 1, // left
+                        i + 1, // right
+                        i - this.boardSize, // top
+                        i + this.boardSize // bottom
+                    ].filter(index => index >= 0 && index < this.totalCells);
+                    
+                    for (const neighbor of neighbors) {
+                        if (this.board[neighbor]) {
+                            const neighborPiece = this.pieceBank.find(p => p.id === this.board[neighbor]);
+                            if (piece.code === neighborPiece.code) {
+                                feedback.push(`Pieces at ${i} and ${neighbor} are identical`);
+                                valid = false;
+                            }
+                        }
+                    }
+                }
+                
+                return { valid, feedback };
+            }
+            
+            render() {
+                this.renderBoard();
+                this.renderBank();
+                this.updateStats();
+            }
+            
+            renderBoard() {
+                const boardEl = document.getElementById('board');
+                boardEl.style.gridTemplateColumns = `repeat(${this.boardSize}, 1fr)`;
+                boardEl.innerHTML = '';
+                
+                for (let i = 0; i < this.totalCells; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    if (this.board[i]) cell.classList.add('placed');
+                    if (this.locked[i]) cell.classList.add('locked');
+                    
+                    if (this.board[i]) {
+                        const piece = this.pieceBank.find(p => p.id === this.board[i]);
+                        cell.appendChild(piece.svg.cloneNode(true));
+                    }
+                    
+                    cell.addEventListener('click', () => {
+                        if (this.board[i] && !this.locked[i]) {
+                            this.removePiece(i);
+                        } else if (this.selectedPiece) {
+                            if (this.placePiece(i, this.selectedPiece)) {
+                                this.selectedPiece = null;
+                            } else {
+                                cell.classList.add('invalid');
+                                setTimeout(() => cell.classList.remove('invalid'), 500);
+                            }
+                        }
+                    });
+                    
+                    boardEl.appendChild(cell);
+                }
+            }
+            
+            renderBank() {
+                const bankEl = document.getElementById('piece-bank');
+                bankEl.innerHTML = '';
+                
+                this.pieceBank.forEach(piece => {
+                    const pieceEl = document.createElement('div');
+                    pieceEl.className = `bank-piece ${piece.colorType}`;
+                    if (piece.used) pieceEl.classList.add('used');
+                    
+                    pieceEl.appendChild(piece.svg.cloneNode(true));
+                    pieceEl.setAttribute('data-piece-id', piece.id);
+                    
+                    pieceEl.addEventListener('click', () => {
+                        if (!piece.used) {
+                            this.selectedPiece = piece.id;
+                            // Highlight selected piece
+                            document.querySelectorAll('.bank-piece').forEach(el => {
+                                el.classList.remove('selected');
+                            });
+                            pieceEl.classList.add('selected');
+                        }
+                    });
+                    
+                    // Drag and drop
+                    pieceEl.setAttribute('draggable', 'true');
+                    pieceEl.addEventListener('dragstart', (e) => {
+                        if (!piece.used) {
+                            e.dataTransfer.setData('text/plain', piece.id);
+                            pieceEl.classList.add('dragging');
+                        }
+                    });
+                    
+                    pieceEl.addEventListener('dragend', () => {
+                        pieceEl.classList.remove('dragging');
+                    });
+                    
+                    bankEl.appendChild(pieceEl);
+                });
+                
+                // Allow drop on board cells
+                const cells = document.querySelectorAll('.cell');
+                cells.forEach(cell => {
+                    cell.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                    });
+                    
+                    cell.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        const pieceId = e.dataTransfer.getData('text/plain');
+                        const boardIndex = Array.from(cells).indexOf(cell);
+                        if (pieceId && boardIndex !== -1) {
+                            if (this.placePiece(boardIndex, pieceId)) {
+                                this.selectedPiece = null;
+                            }
+                        }
+                    });
+                });
+            }
+            
+            updateStats() {
+                const placed = this.board.filter(Boolean).length;
+                const locked = this.locked.filter(Boolean).length;
+                
+                const blackPieces = this.board
+                    .map(id => this.pieceBank.find(p => p.id === id))
+                    .filter(Boolean)
+                    .filter(p => p.colorType === 'black').length;
+                
+                const whitePieces = this.board
+                    .map(id => this.pieceBank.find(p => p.id === id))
+                    .filter(Boolean)
+                    .filter(p => p.colorType === 'white').length;
+                
+                document.getElementById('placed-count').textContent = placed;
+                document.getElementById('locked-count').textContent = locked;
+                document.getElementById('black-count').textContent = blackPieces;
+                document.getElementById('white-count').textContent = whitePieces;
+            }
+            
+            exportGame() {
+                const gameData = {
+                    boardSize: this.boardSize,
+                    board: this.board,
+                    locked: this.locked,
+                    pieceBank: this.pieceBank.map(p => ({
+                        id: p.id,
+                        colorType: p.colorType,
+                        pattern: p.pattern,
+                        code: p.code,
+                        used: p.used
+                    })),
+                    timestamp: new Date().toISOString()
+                };
+                
+                const dataStr = JSON.stringify(gameData, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `juzzle-game-${Date.now()}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+        }
+
+        // Game instance
+        let game = new JuzzleGame(4);
+
+        // UI Functions
+        function newGame(size) {
+            game = new JuzzleGame(size);
+            document.querySelector('.board-section h3').textContent = `Game Board (${size}×${size})`;
+        }
+
+        function checkSolution() {
+            const result = game.checkSolution();
+            if (result.valid) {
+                alert('🎉 Congratulations! Puzzle solved correctly!');
+            } else {
+                alert('❌ Puzzle not complete:\n' + result.feedback.join('\n'));
+            }
+        }
+
+        function exportGame() {
+            game.exportGame();
+        }
+    </script>
+</body>
+</html>
