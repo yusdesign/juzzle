@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Juzzle Piece Generator</title>
+    <style>
+        body { margin: 20px; font-family: sans-serif; }
+        #puzzle-container { 
+            border: 1px solid #ccc; 
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        .controls {
+            margin: 20px 0;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 8px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #4A90E2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover { background: #357ABD; }
+    </style>
+</head>
+<body>
+    <h1>Juzzle Puzzle Piece Generator</h1>
+    
+    <div class="controls">
+        <button onclick="generatePieces(16)">Generate 16 Pieces (4×4)</button>
+        <button onclick="generatePieces(24)">Generate 24 Pieces (6×4)</button>
+        <button onclick="saveAsSVG()">Save as SVG</button>
+        <button onclick="generateAndDownload(16)">Generate & Download</button>
+    </div>
+    
+    <div id="puzzle-container"></div>
+
+    <script>
+        // Include the JuzzlePieceGenerator class here
+        class JuzzlePieceGenerator {
+            constructor() {
+                this.squareSize = 355.32;
+                this.knobRadius = 64.65;
+                this.knobOffset = 41.72;
+                this.connectionPoints = [
+                    { x: -this.knobOffset, y: 177.66 - this.knobOffset, side: 'left', pos: 'top' },
+                    { x: -this.knobOffset, y: 177.66 + this.knobOffset, side: 'left', pos: 'bottom' },
+                    { x: this.squareSize + this.knobOffset, y: 177.66 - this.knobOffset, side: 'right', pos: 'top' },
+                    { x: this.squareSize + this.knobOffset, y: 177.66 + this.knobOffset, side: 'right', pos: 'bottom' },
+                    { x: 177.66 - this.knobOffset, y: -this.knobOffset, side: 'top', pos: 'left' },
+                    { x: 177.66 + this.knobOffset, y: -this.knobOffset, side: 'top', pos: 'right' },
+                    { x: 177.66 - this.knobOffset, y: this.squareSize + this.knobOffset, side: 'bottom', pos: 'left' },
+                    { x: 177.66 + this.knobOffset, y: this.squareSize + this.knobOffset, side: 'bottom', pos: 'right' }
+                ];
+            }
+
+            generateBalancedPattern() {
+                const pattern = this.connectionPoints.map(() => 
+                    Math.random() > 0.5 ? 'knob' : 'hole'
+                );
+                
+                ['left', 'right', 'top', 'bottom'].forEach(side => {
+                    const sideIndices = this.connectionPoints
+                        .map((cp, i) => cp.side === side ? i : -1)
+                        .filter(i => i !== -1);
+                    const sideTypes = sideIndices.map(i => pattern[i]);
+                    
+                    if (sideTypes.every(t => t === 'knob')) {
+                        pattern[sideIndices[0]] = 'hole';
+                    } else if (sideTypes.every(t => t === 'hole')) {
+                        pattern[sideIndices[0]] = 'knob';
+                    }
+                });
+                
+                return pattern;
+            }
+
+            createPieceSVG(pattern, pieceId, color = '#7E8AA2') {
+                const svgNS = "http://www.w3.org/2000/svg";
+                const group = document.createElementNS(svgNS, 'g');
+                group.setAttribute('id', `piece-${pieceId}`);
+                
+                const square = document.createElementNS(svgNS, 'rect');
+                square.setAttribute('x', '0');
+                square.setAttribute('y', '0');
+                square.setAttribute('width', this.squareSize);
+                square.setAttribute('height', this.squareSize);
+                square.setAttribute('fill', color);
+                square.setAttribute('stroke', '#4A5568');
+                square.setAttribute('stroke-width', '8');
+                group.appendChild(square);
+                
+                this.connectionPoints.forEach((point, i) => {
+                    if (pattern[i] === 'knob') {
+                        const knob = document.createElementNS(svgNS, 'circle');
+                        knob.setAttribute('cx', point.x);
+                        knob.setAttribute('cy', point.y);
+                        knob.setAttribute('r', this.knobRadius);
+                        knob.setAttribute('fill', color);
+                        knob.setAttribute('stroke', '#4A5568');
+                        knob.setAttribute('stroke-width', '8');
+                        group.appendChild(knob);
+                    }
+                });
+                
+                return group;
+            }
+
+            generatePiecesGrid(numPieces = 16, cols = 4) {
+                const svgNS = "http://www.w3.org/2000/svg";
+                const svg = document.createElementNS(svgNS, 'svg');
+                svg.setAttribute('width', '1200');
+                svg.setAttribute('height', '800');
+                svg.setAttribute('viewBox', '0 0 1200 800');
+                
+                const colors = [
+                    '#4A90E2', '#2ECC71', '#E74C3C', '#F39C12',
+                    '#9B59B6', '#1ABC9C', '#E67E22', '#34495E',
+                    '#3498DB', '#27AE60', '#D35400', '#8E44AD',
+                    '#16A085', '#2980B9', '#C0392B', '#7F8C8D'
+                ];
+                
+                const rows = Math.ceil(numPieces / cols);
+                const pieceWidth = this.squareSize + 100;
+                const pieceHeight = this.squareSize + 100;
+                
+                for (let i = 0; i < numPieces; i++) {
+                    const pattern = this.generateBalancedPattern();
+                    const color = colors[i % colors.length];
+                    const piece = this.createPieceSVG(pattern, i, color);
+                    
+                    const col = i % cols;
+                    const row = Math.floor(i / cols);
+                    piece.setAttribute('transform', `translate(${50 + col * pieceWidth}, ${50 + row * pieceHeight})`);
+                    svg.appendChild(piece);
+                }
+                
+                return svg;
+            }
+        }
+
+        const generator = new JuzzlePieceGenerator();
+        let currentSVG = null;
+
+        function generatePieces(num) {
+            const cols = num === 24 ? 6 : 4;
+            const container = document.getElementById('puzzle-container');
+            container.innerHTML = '';
+            currentSVG = generator.generatePiecesGrid(num, cols);
+            container.appendChild(currentSVG);
+        }
+
+        function saveAsSVG() {
+            if (!currentSVG) return;
+            const svgString = new XMLSerializer().serializeToString(currentSVG);
+            const blob = new Blob([svgString], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'juzzle-pieces.svg';
+            a.click();
+        }
+
+        function generateAndDownload(num) {
+            generatePieces(num);
+            setTimeout(saveAsSVG, 100);
+        }
+
+        // Initial generation
+        generatePieces(16);
+    </script>
+</body>
+</html> 
