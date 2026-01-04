@@ -1,16 +1,150 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Juzzle, an 0h h1 Hybrid Puzzle Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Juzzle - 0h h1 Hybrid</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .piece-grid { display: grid; grid-template-columns: repeat(10, 60px); gap: 5px; }
-        .piece { width: 60px; height: 60px; border: 1px solid #333; display: flex; 
-                align-items: center; justify-content: center; font-family: monospace; }
-        .corner { background-color: #ffeaa7; }
-        .border { background-color: #a29bfe; }
-        .field { background-color: #fd79a8; }
-        .controls { margin: 20px 0; }
+        /* Mobile-first responsive styles */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 10px;
+            background: #f8f9fa;
+            min-height: 100vh;
+        }
+        
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-width: 100%;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        
+        .controls button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            flex: 1;
+            min-width: 120px;
+        }
+        
+        #toggleRotation {
+            background: #ff6b6b;
+            color: white;
+        }
+        
+        .main-area {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        @media (min-width: 768px) {
+            .main-area {
+                flex-direction: row;
+            }
+            .bank-container {
+                width: 300px;
+            }
+        }
+        
+        .board-container, .bank-container {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .board-container h2, .bank-container h2 {
+            margin-bottom: 10px;
+            color: #495057;
+            font-size: 18px;
+        }
+        
+        #boardCanvas {
+            width: 100%;
+            max-width: 480px; /* 12 * 40px */
+            height: auto;
+            display: block;
+            margin: 0 auto;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+        }
+        
+        .piece-bank {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        
+        @media (min-width: 768px) {
+            .piece-bank {
+                grid-template-columns: repeat(6, 1fr);
+            }
+        }
+        
+        .piece-canvas {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 4px;
+            cursor: grab;
+            transition: transform 0.2s;
+        }
+        
+        .piece-canvas:hover {
+            transform: scale(1.05);
+        }
+        
+        .piece-canvas:active {
+            cursor: grabbing;
+        }
+        
+        .empty-bank {
+            text-align: center;
+            color: #868e96;
+            font-style: italic;
+            padding: 20px;
+            grid-column: 1 / -1;
+        }
+        
+        #counter {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #495057;
+            font-size: 14px;
+        }
+        
+        .hint {
+            margin-top: 10px;
+            color: #868e96;
+            font-size: 12px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -39,89 +173,6 @@
         </div>
     </div>
 </div>
-
-<style>
-.game-container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 20px;
-    border-bottom: 2px solid #dee2e6;
-}
-
-.controls button {
-    margin: 0 5px;
-    padding: 8px 16px;
-    background: #4dabf7;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.controls button:hover {
-    background: #339af0;
-}
-
-#counter {
-    margin-left: 20px;
-    font-weight: bold;
-    color: #495057;
-}
-
-.main-area {
-    display: flex;
-    gap: 30px;
-}
-
-.board-container {
-    flex: 1;
-}
-
-.bank-container {
-    width: 300px;
-}
-
-.piece-bank {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    max-height: 600px;
-    overflow-y: auto;
-    padding: 10px;
-    background: #f8f9fa;
-    border-radius: 8px;
-}
-
-.piece-canvas {
-    cursor: grab;
-    border-radius: 4px;
-    transition: transform 0.2s;
-}
-
-.piece-canvas:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-.piece-canvas:active {
-    cursor: grabbing;
-}
-
-.hint {
-    margin-top: 10px;
-    color: #868e96;
-    font-size: 0.9em;
-    font-style: italic;
-}
-</style>
-    <script src="juzzle.js"></script>
+<script src="juzzle.js"></script>
 </body>
 </html> 
