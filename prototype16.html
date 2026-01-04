@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Juzzle 4×4 Prototype</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #e8e8e8 0%, #d0d0d0 100%);
+            min-height: 100vh;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .game-container {
+            max-width: 500px;
+            width: 100%;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #2a2a2a;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 24px;
+            letter-spacing: 3px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #aaa;
+            font-size: 14px;
+            font-style: italic;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 15px 0;
+        }
+
+        .control-btn {
+            padding: 12px 20px;
+            background: #3a3a3a;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 140px;
+        }
+
+        .control-btn:hover {
+            background: #4a4a4a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .control-btn.primary {
+            background: #2a6e2a;
+        }
+
+        .control-btn.primary:hover {
+            background: #3a8e3a;
+        }
+
+        /* Main Game Area */
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .game-area {
+                flex-direction: row;
+                align-items: flex-start;
+            }
+        }
+
+        /* Board */
+        .board-container {
+            flex: 1;
+            background: #f8f8f8;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .board-container h2 {
+            text-align: center;
+            color: #2a2a2a;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        #boardCanvas {
+            width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+            background: white;
+            border-radius: 6px;
+            border: 2px solid #d0d0d0;
+        }
+
+        /* Piece Bank */
+        .bank-container {
+            background: #f8f8f8;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        @media (min-width: 768px) {
+            .bank-container {
+                width: 250px;
+            }
+        }
+
+        .bank-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .bank-header h2 {
+            color: #2a2a2a;
+            font-size: 16px;
+        }
+
+        #bankCounter {
+            color: #666;
+            font-size: 14px;
+            background: #e8e8e8;
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+
+        .piece-bank {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            padding: 10px;
+            background: #e8e8e8;
+            border-radius: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .piece-canvas {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 6px;
+            cursor: grab;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .piece-canvas:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .piece-canvas:active {
+            cursor: grabbing;
+        }
+
+        /* Stats */
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            background: #2a2a2a;
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #4a9eda;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 4px;
+        }
+
+        /* Instructions */
+        .instructions {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #444;
+        }
+
+        .instructions h3 {
+            color: #2a2a2a;
+            margin-bottom: 10px;
+        }
+
+        .instructions ul {
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 5px;
+        }
+
+        /* Drag hint */
+        #dragHint {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(42, 42, 42, 0.95);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 14px;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        #dragHint.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>J U Z Z L E · 16</h1>
+            <div class="subtitle">4×4 Mathematical Prototype | Knob ↔ Hole System</div>
+            
+            <div class="controls">
+                <button class="control-btn primary" onclick="newGame()">New Game</button>
+                <button class="control-btn" onclick="addLockedPieces()">Add Locked (0h h1)</button>
+                <button class="control-btn" onclick="showSolution()">Show Valid Spots</button>
+                <button class="control-btn" onclick="resetBoard()">Reset Board</button>
+            </div>
+        </div>
+
+        <!-- Main Game Area -->
+        <div class="game-area">
+            <!-- Board -->
+            <div class="board-container">
+                <h2>4 × 4 P U Z Z L E</h2>
+                <canvas id="boardCanvas" width="320" height="320"></canvas>
+                
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="placedCount">0</div>
+                        <div class="stat-label">Placed</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="lockedCount">0</div>
+                        <div class="stat-label">Locked</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">16</div>
+                        <div class="stat-label">Total</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Piece Bank -->
+            <div class="bank-container">
+                <div class="bank-header">
+                    <h2>P I E C E &nbsp; B A N K</h2>
+                    <div id="bankCounter">16</div>
+                </div>
+                <div id="pieceContainer" class="piece-bank"></div>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="instructions">
+            <h3>How It Works:</h3>
+            <ul>
+                <li><strong>Knobs</strong> (outer circles) connect only to <strong>Holes</strong> (inner circles)</li>
+                <li><strong>Flat sides</strong> only appear on puzzle edges</li>
+                <li>Each piece is generated for its specific board position</li>
+                <li><strong>Drag pieces</strong> from bank to board (green = valid spot)</li>
+                <li>Pieces with <strong>red borders</strong> are locked (like 0h h1)</li>
+            </ul>
+        </div>
+
+        <!-- Drag Hint -->
+        <div id="dragHint">Drop piece on highlighted green cell</div>
+    </div>
+
+    <script src="juzzle16.js"></script>
+    <script>
+        // Simple drag hint handler
+        function showDragHint(text) {
+            const hint = document.getElementById('dragHint');
+            hint.textContent = text;
+            hint.classList.add('visible');
+            setTimeout(() => hint.classList.remove('visible'), 1500);
+        }
+    </script>
+</body>
+</html> 
