@@ -1,0 +1,442 @@
+ <!DOCTYPE html>
+<html>
+<head>
+    <title>Juzzle Generator - Exact Template Coordinates</title>
+    <style>
+        body { margin: 0; padding: 20px; background: #1a1a1a; color: #fff; font-family: monospace; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { color: #4A90E2; text-align: center; }
+        .controls {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: #2d2d2d;
+            border-radius: 10px;
+        }
+        button {
+            padding: 12px 24px;
+            margin: 8px;
+            background: #4A90E2;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-family: monospace;
+        }
+        button:hover { background: #357ABD; }
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+        .piece-card {
+            background: #2d2d2d;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .piece-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+        .piece-svg {
+            width: 100%;
+            height: 200px;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+        }
+        .piece-id {
+            margin-top: 10px;
+            color: #4A90E2;
+            font-weight: bold;
+        }
+        .pattern-info {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 8px;
+            word-break: break-all;
+        }
+        .legend {
+            margin-top: 30px;
+            padding: 15px;
+            background: #2d2d2d;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .knob-example, .hole-example {
+            display: inline-block;
+            width: 20px; height: 20px;
+            margin: 0 5px 0 15px;
+            border-radius: 50%;
+            vertical-align: middle;
+        }
+        .knob-example { background: #4A90E2; border: 2px solid white; }
+        .hole-example { 
+            background: rgba(74, 144, 226, 0.3); 
+            border: 2px dashed white; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧩 Juzzle Generator - Exact Template Coordinates</h1>
+        
+        <div class="controls">
+            <button onclick="generateGrid(4, 4)">Generate 16 Pieces (4×4)</button>
+            <button onclick="generateGrid(6, 4)">Generate 24 Pieces (6×4)</button>
+            <button onclick="exportGrid()">Export Grid as SVG</button>
+            <button onclick="toggleView()">Toggle View</button>
+        </div>
+        
+        <div id="grid"></div>
+        
+        <div class="legend">
+            <strong>Legend:</strong> 
+            <span class="knob-example"></span> Knob (protrusion) 
+            <span class="hole-example"></span> Hole (indentation)
+            <br>
+            <small>Coordinates exactly match original template: Square(373.83,381.35 to 729.15,736.67)</small>
+        </div>
+    </div>
+
+    <script>
+        // EXACT coordinates from your template
+        const TEMPLATE = {
+            // Square bounds (EXACT from your SVG)
+            square: {
+                x: 373.83,
+                y: 381.35,
+                width: 355.32,   // 729.15 - 373.83
+                height: 355.32   // 736.67 - 381.35
+            },
+            // Circle centers (EXACT from your SVG)
+            circles: [
+                // Left pair
+                { cx: 331.55, cy: 559.01 },  // Left Top
+                { cx: 414.33, cy: 559.01 },  // Left Bottom
+                // Right pair
+                { cx: 688.86, cy: 559.01 },  // Right Top
+                { cx: 771.64, cy: 559.01 },  // Right Bottom
+                // Top pair
+                { cx: 551.49, cy: 336.84 },  // Top Left
+                { cx: 551.49, cy: 419.63 },  // Top Right
+                // Bottom pair
+                { cx: 551.49, cy: 694.15 },  // Bottom Left
+                { cx: 551.49, cy: 776.94 }   // Bottom Right
+            ],
+            // Circle radius (calculated from your paths)
+            radius: 64.65
+        };
+
+        class ExactTemplateGenerator {
+            constructor() {
+                // Normalize to (0,0) origin for easier manipulation
+                this.square = {
+                    x: 0,
+                    y: 0,
+                    width: TEMPLATE.square.width,
+                    height: TEMPLATE.square.height
+                };
+                
+                // Calculate circle positions relative to (0,0) square
+                this.circles = TEMPLATE.circles.map(circle => ({
+                    cx: circle.cx - TEMPLATE.square.x,
+                    cy: circle.cy - TEMPLATE.square.y
+                }));
+                
+                this.radius = TEMPLATE.radius;
+                
+                // Map circles to sides
+                this.sideMap = [
+                    { side: 'left', pos: 'top' },
+                    { side: 'left', pos: 'bottom' },
+                    { side: 'right', pos: 'top' },
+                    { side: 'right', pos: 'bottom' },
+                    { side: 'top', pos: 'left' },
+                    { side: 'top', pos: 'right' },
+                    { side: 'bottom', pos: 'left' },
+                    { side: 'bottom', pos: 'right' }
+                ];
+            }
+
+            // Generate solvable pattern
+            generatePattern() {
+                let pattern = new Array(8).fill(0).map(() => 
+                    Math.random() > 0.5 ? 'knob' : 'hole'
+                );
+                
+                // Ensure solvability: each side must have at least one knob AND one hole
+                const sides = ['left', 'right', 'top', 'bottom'];
+                
+                sides.forEach(side => {
+                    const indices = this.sideMap
+                        .map((map, i) => map.side === side ? i : -1)
+                        .filter(i => i !== -1);
+                    
+                    const sidePattern = indices.map(i => pattern[i]);
+                    const hasKnob = sidePattern.includes('knob');
+                    const hasHole = sidePattern.includes('hole');
+                    
+                    // If side lacks either type, make it alternating
+                    if (!hasKnob || !hasHole) {
+                        indices.forEach((idx, i) => {
+                            pattern[idx] = i % 2 === 0 ? 'knob' : 'hole';
+                        });
+                    }
+                });
+                
+                return pattern;
+            }
+
+            // Create SVG path with boolean operations
+            createPiecePath(pattern, pieceId, color) {
+                const svgNS = "http://www.w3.org/2000/svg";
+                
+                // Create SVG element
+                const svg = document.createElementNS(svgNS, 'svg');
+                svg.setAttribute('viewBox', `0 0 ${this.square.width} ${this.square.height}`);
+                svg.setAttribute('width', '200');
+                svg.setAttribute('height', '200');
+                svg.setAttribute('class', 'piece-svg');
+                
+                // Create mask for boolean operations
+                const defs = document.createElementNS(svgNS, 'defs');
+                const mask = document.createElementNS(svgNS, 'mask');
+                mask.setAttribute('id', `mask-${pieceId}`);
+                
+                // White base (shows everything)
+                const whiteBase = document.createElementNS(svgNS, 'rect');
+                whiteBase.setAttribute('x', '0');
+                whiteBase.setAttribute('y', '0');
+                whiteBase.setAttribute('width', this.square.width);
+                whiteBase.setAttribute('height', this.square.height);
+                whiteBase.setAttribute('fill', 'white');
+                mask.appendChild(whiteBase);
+                
+                // Black circles for holes (hides those areas)
+                this.circles.forEach((circle, i) => {
+                    if (pattern[i] === 'hole') {
+                        const hole = document.createElementNS(svgNS, 'circle');
+                        hole.setAttribute('cx', circle.cx);
+                        hole.setAttribute('cy', circle.cy);
+                        hole.setAttribute('r', this.radius);
+                        hole.setAttribute('fill', 'black');
+                        mask.appendChild(hole);
+                    }
+                });
+                
+                defs.appendChild(mask);
+                svg.appendChild(defs);
+                
+                // Main piece group
+                const group = document.createElementNS(svgNS, 'g');
+                
+                // Base square (will be masked for holes)
+                const square = document.createElementNS(svgNS, 'rect');
+                square.setAttribute('x', '0');
+                square.setAttribute('y', '0');
+                square.setAttribute('width', this.square.width);
+                square.setAttribute('height', this.square.height);
+                square.setAttribute('fill', color);
+                square.setAttribute('mask', `url(#mask-${pieceId})`);
+                square.setAttribute('stroke', '#ffffff');
+                square.setAttribute('stroke-width', '6');
+                group.appendChild(square);
+                
+                // Add knobs on top
+                this.circles.forEach((circle, i) => {
+                    if (pattern[i] === 'knob') {
+                        const knob = document.createElementNS(svgNS, 'circle');
+                        knob.setAttribute('cx', circle.cx);
+                        knob.setAttribute('cy', circle.cy);
+                        knob.setAttribute('r', this.radius);
+                        knob.setAttribute('fill', color);
+                        knob.setAttribute('stroke', '#ffffff');
+                        knob.setAttribute('stroke-width', '6');
+                        group.appendChild(knob);
+                    }
+                });
+                
+                svg.appendChild(group);
+                
+                // Optional: Add faint outline of holes for clarity
+                this.circles.forEach((circle, i) => {
+                    if (pattern[i] === 'hole') {
+                        const holeOutline = document.createElementNS(svgNS, 'circle');
+                        holeOutline.setAttribute('cx', circle.cx);
+                        holeOutline.setAttribute('cy', circle.cy);
+                        holeOutline.setAttribute('r', this.radius);
+                        holeOutline.setAttribute('fill', 'none');
+                        holeOutline.setAttribute('stroke', 'rgba(255,255,255,0.5)');
+                        holeOutline.setAttribute('stroke-width', '3');
+                        holeOutline.setAttribute('stroke-dasharray', '4,4');
+                        svg.appendChild(holeOutline);
+                    }
+                });
+                
+                return svg;
+            }
+
+            // Get pattern code (e.g., LTK-LBH-RTK-RBH...)
+            getPatternCode(pattern) {
+                const sideCodes = { left: 'L', right: 'R', top: 'T', bottom: 'B' };
+                const posCodes = { top: 'T', bottom: 'B', left: 'L', right: 'R' };
+                
+                return pattern.map((type, i) => {
+                    const side = sideCodes[this.sideMap[i].side];
+                    const pos = posCodes[this.sideMap[i].pos];
+                    return `${side}${pos}${type === 'knob' ? 'K' : 'H'}`;
+                }).join('-');
+            }
+        }
+
+        // Color palette
+        const colors = [
+            '#4A90E2', '#2ECC71', '#E74C3C', '#F39C12',
+            '#9B59B6', '#1ABC9C', '#E67E22', '#3498DB',
+            '#27AE60', '#D35400', '#8E44AD', '#16A085',
+            '#2980B9', '#C0392B', '#7F8C8D', '#F1C40F',
+            '#2C3E50', '#95A5A6', '#D68910', '#AED6F1',
+            '#A569BD', '#45B39D', '#EB984E', '#5DADE2'
+        ];
+
+        let currentPieces = [];
+        let isDetailedView = false;
+
+        function generateGrid(rows, cols) {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            currentPieces = [];
+            
+            const generator = new ExactTemplateGenerator();
+            const total = rows * cols;
+            
+            for (let i = 0; i < total; i++) {
+                const pattern = generator.generatePattern();
+                const color = colors[i % colors.length];
+                
+                const pieceCard = document.createElement('div');
+                pieceCard.className = 'piece-card';
+                
+                const svg = generator.createPiecePath(pattern, i, color);
+                pieceCard.appendChild(svg);
+                
+                const idDiv = document.createElement('div');
+                idDiv.className = 'piece-id';
+                idDiv.textContent = `Piece ${i + 1}`;
+                pieceCard.appendChild(idDiv);
+                
+                if (isDetailedView) {
+                    const patternDiv = document.createElement('div');
+                    patternDiv.className = 'pattern-info';
+                    patternDiv.textContent = generator.getPatternCode(pattern);
+                    pieceCard.appendChild(patternDiv);
+                }
+                
+                grid.appendChild(pieceCard);
+                currentPieces.push({ pattern, color, id: i });
+            }
+            
+            // Update grid columns based on view
+            grid.style.gridTemplateColumns = isDetailedView ? 
+                'repeat(auto-fill, minmax(250px, 1fr))' : 
+                'repeat(auto-fill, minmax(220px, 1fr))';
+        }
+
+        function toggleView() {
+            isDetailedView = !isDetailedView;
+            generateGrid(4, 4); // Regenerate to update view
+        }
+
+        function exportGrid() {
+            const generator = new ExactTemplateGenerator();
+            const svgNS = "http://www.w3.org/2000/svg";
+            
+            // Create master SVG
+            const masterSVG = document.createElementNS(svgNS, 'svg');
+            masterSVG.setAttribute('xmlns', svgNS);
+            masterSVG.setAttribute('width', '1200');
+            masterSVG.setAttribute('height', '800');
+            masterSVG.setAttribute('viewBox', '0 0 1200 800');
+            
+            // Add background
+            const bg = document.createElementNS(svgNS, 'rect');
+            bg.setAttribute('width', '1200');
+            bg.setAttribute('height', '800');
+            bg.setAttribute('fill', '#1a1a1a');
+            masterSVG.appendChild(bg);
+            
+            // Add pieces in grid layout
+            const cols = 6;
+            const rows = Math.ceil(currentPieces.length / cols);
+            const pieceWidth = 180;
+            const pieceHeight = 180;
+            const spacing = 20;
+            
+            currentPieces.forEach((piece, i) => {
+                const col = i % cols;
+                const row = Math.floor(i / cols);
+                
+                const x = spacing + col * (pieceWidth + spacing);
+                const y = spacing + row * (pieceHeight + spacing);
+                
+                const group = document.createElementNS(svgNS, 'g');
+                group.setAttribute('transform', `translate(${x}, ${y})`);
+                
+                // Create piece SVG
+                const pieceSVG = generator.createPiecePath(piece.pattern, `export-${i}`, piece.color);
+                pieceSVG.removeAttribute('width');
+                pieceSVG.removeAttribute('height');
+                pieceSVG.setAttribute('viewBox', `0 0 ${generator.square.width} ${generator.square.height}`);
+                pieceSVG.setAttribute('width', pieceWidth.toString());
+                pieceSVG.setAttribute('height', pieceHeight.toString());
+                
+                // Clone and append
+                const clonedSVG = document.importNode(pieceSVG, true);
+                group.appendChild(clonedSVG);
+                
+                // Add piece number
+                const text = document.createElementNS(svgNS, 'text');
+                text.setAttribute('x', (pieceWidth / 2).toString());
+                text.setAttribute('y', (pieceHeight + 20).toString());
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('fill', '#ffffff');
+                text.setAttribute('font-size', '14');
+                text.textContent = `Piece ${i + 1}`;
+                group.appendChild(text);
+                
+                masterSVG.appendChild(group);
+            });
+            
+            // Add title
+            const title = document.createElementNS(svgNS, 'text');
+            title.setAttribute('x', '600');
+            title.setAttribute('y', '30');
+            title.setAttribute('text-anchor', 'middle');
+            title.setAttribute('fill', '#4A90E2');
+            title.setAttribute('font-size', '24');
+            title.setAttribute('font-weight', 'bold');
+            title.textContent = 'Juzzle Pieces Grid';
+            masterSVG.insertBefore(title, masterSVG.firstChild.nextSibling);
+            
+            // Export
+            const serializer = new XMLSerializer();
+            const svgString = serializer.serializeToString(masterSVG);
+            const blob = new Blob([svgString], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'juzzle-grid.svg';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Initialize
+        generateGrid(4, 4);
+    </script>
+</body>
+</html>
