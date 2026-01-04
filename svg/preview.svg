@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="600" viewBox="0 0 1200 900" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <!-- Base shape for all pieces -->
+        <path id="baseSquare" d="M373.83,381.35H729.15V736.67H373.83Z"/>
+        
+        <!-- All 8 circle positions -->
+        <g id="allKnobs">
+            <circle id="leftTopKnob" cx="331.55" cy="559.01" r="64.65"/>
+            <circle id="leftBottomKnob" cx="414.33" cy="559.01" r="64.65"/>
+            <circle id="rightTopKnob" cx="688.86" cy="559.01" r="64.65"/>
+            <circle id="rightBottomKnob" cx="771.64" cy="559.01" r="64.65"/>
+            <circle id="topLeftKnob" cx="551.49" cy="336.84" r="64.65"/>
+            <circle id="topRightKnob" cx="551.49" cy="419.63" r="64.65"/>
+            <circle id="bottomLeftKnob" cx="551.49" cy="694.15" r="64.65"/>
+            <circle id="bottomRightKnob" cx="551.49" cy="776.94" r="64.65"/>
+        </g>
+        
+        <!-- Piece A: All knobs (protruding) -->
+        <clipPath id="pieceA">
+            <use href="#baseSquare"/>
+            <use href="#allKnobs"/>
+        </clipPath>
+        
+        <!-- Piece B: Knobs on left/right, holes on top/bottom -->
+        <mask id="pieceBMask">
+            <rect width="1080" height="1080" fill="white"/>
+            <use href="#baseSquare" fill="white"/>
+            <!-- Knobs (white = keep) -->
+            <use href="#leftTopKnob" fill="white"/>
+            <use href="#leftBottomKnob" fill="white"/>
+            <use href="#rightTopKnob" fill="white"/>
+            <use href="#rightBottomKnob" fill="white"/>
+            <!-- Holes (black = remove) -->
+            <use href="#topLeftKnob" fill="black"/>
+            <use href="#topRightKnob" fill="black"/>
+            <use href="#bottomLeftKnob" fill="black"/>
+            <use href="#bottomRightKnob" fill="black"/>
+        </mask>
+        
+        <!-- Piece C: Checkerboard pattern -->
+        <mask id="pieceCMask">
+            <rect width="1080" height="1080" fill="white"/>
+            <use href="#baseSquare" fill="white"/>
+            <!-- Alternate knobs/holes -->
+            <use href="#leftTopKnob" fill="black"/>
+            <use href="#leftBottomKnob" fill="white"/>
+            <use href="#rightTopKnob" fill="white"/>
+            <use href="#rightBottomKnob" fill="black"/>
+            <use href="#topLeftKnob" fill="white"/>
+            <use href="#topRightKnob" fill="black"/>
+            <use href="#bottomLeftKnob" fill="black"/>
+            <use href="#bottomRightKnob" fill="white"/>
+        </mask>
+    </defs>
+    
+    <!-- Piece A (top-left): All knobs -->
+    <g transform="translate(50, 50)">
+        <rect width="400" height="400" fill="#4A90E2" clip-path="url(#pieceA)"/>
+        <rect width="400" height="400" fill="none" stroke="#2C3E50" stroke-width="6" clip-path="url(#pieceA)"/>
+        <text x="200" y="430" text-anchor="middle" fill="#2C3E50" font-size="24">Piece A: All Knobs</text>
+    </g>
+    
+    <!-- Piece B (top-right): Left/Right knobs, Top/Bottom holes -->
+    <g transform="translate(500, 50)">
+        <rect width="400" height="400" fill="#2ECC71" mask="url(#pieceBMask)"/>
+        <rect width="400" height="400" fill="none" stroke="#27AE60" stroke-width="6" mask="url(#pieceBMask)"/>
+        <text x="200" y="430" text-anchor="middle" fill="#27AE60" font-size="24">Piece B: Mixed</text>
+    </g>
+    
+    <!-- Piece C (bottom-center): Checkerboard -->
+    <g transform="translate(275, 350)">
+        <rect width="400" height="400" fill="#E74C3C" mask="url(#pieceCMask)"/>
+        <rect width="400" height="400" fill="none" stroke="#C0392B" stroke-width="6" mask="url(#pieceCMask)"/>
+        <text x="200" y="430" text-anchor="middle" fill="#C0392B" font-size="24">Piece C: Checkerboard</text>
+    </g>
+    
+    <!-- Legend -->
+    <g transform="translate(50, 500)">
+        <circle cx="20" cy="20" r="15" fill="#4A90E2"/>
+        <text x="45" y="25" font-size="20">= Knob (protruding)</text>
+        
+        <circle cx="20" cy="60" r="15" fill="#2ECC71" opacity="0.5"/>
+        <circle cx="20" cy="60" r="12" fill="white"/>
+        <text x="45" y="65" font-size="20">= Hole (indented)</text>
+    </g>
+</svg>
