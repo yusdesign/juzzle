@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Juzzle 4×4 Prototype</title>
+    <title>Juzzle 4×4 | Classic Puzzle Shapes</title>
     <style>
         * {
             margin: 0;
@@ -13,16 +13,16 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #e8e8e8 0%, #d0d0d0 100%);
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
             min-height: 100vh;
-            padding: 10px;
+            padding: 15px;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
         }
 
         .game-container {
-            max-width: 500px;
+            max-width: 800px;
             width: 100%;
         }
 
@@ -30,17 +30,18 @@
         .header {
             text-align: center;
             margin-bottom: 20px;
-            padding: 15px;
-            background: #2a2a2a;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 20px;
+            background: #1a1a1a;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
         }
 
         .header h1 {
             color: white;
-            font-size: 24px;
-            letter-spacing: 3px;
-            margin-bottom: 10px;
+            font-size: 28px;
+            letter-spacing: 4px;
+            margin-bottom: 5px;
+            font-weight: 300;
         }
 
         .subtitle {
@@ -53,46 +54,54 @@
         .controls {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 12px;
             justify-content: center;
-            margin: 15px 0;
+            margin: 20px 0;
         }
 
         .control-btn {
-            padding: 12px 20px;
-            background: #3a3a3a;
+            padding: 12px 24px;
+            background: #333;
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 14px;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
-            min-width: 140px;
+            min-width: 160px;
         }
 
         .control-btn:hover {
-            background: #4a4a4a;
+            background: #444;
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
 
         .control-btn.primary {
-            background: #2a6e2a;
+            background: #2c5aa0;
         }
 
         .control-btn.primary:hover {
-            background: #3a8e3a;
+            background: #3a6bc0;
+        }
+
+        .control-btn.warning {
+            background: #a02c2c;
+        }
+
+        .control-btn.warning:hover {
+            background: #c03a3a;
         }
 
         /* Main Game Area */
         .game-area {
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 25px;
         }
 
-        @media (min-width: 768px) {
+        @media (min-width: 900px) {
             .game-area {
                 flex-direction: row;
                 align-items: flex-start;
@@ -102,17 +111,18 @@
         /* Board */
         .board-container {
             flex: 1;
-            background: #f8f8f8;
-            border-radius: 10px;
-            padding: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
         }
 
         .board-container h2 {
             text-align: center;
-            color: #2a2a2a;
-            margin-bottom: 15px;
-            font-size: 18px;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+            font-size: 20px;
+            font-weight: 300;
         }
 
         #boardCanvas {
@@ -120,68 +130,87 @@
             height: auto;
             display: block;
             margin: 0 auto;
-            background: white;
-            border-radius: 6px;
+            background: #f8f8f8;
+            border-radius: 8px;
             border: 2px solid #d0d0d0;
         }
 
         /* Piece Bank */
         .bank-container {
-            background: #f8f8f8;
-            border-radius: 10px;
-            padding: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        @media (min-width: 768px) {
-            .bank-container {
-                width: 250px;
-            }
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            min-width: 300px;
         }
 
         .bank-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
         }
 
         .bank-header h2 {
-            color: #2a2a2a;
-            font-size: 16px;
+            color: #1a1a1a;
+            font-size: 18px;
+            font-weight: 300;
         }
 
         #bankCounter {
             color: #666;
             font-size: 14px;
-            background: #e8e8e8;
-            padding: 4px 10px;
-            border-radius: 12px;
+            background: #f0f0f0;
+            padding: 6px 12px;
+            border-radius: 15px;
         }
 
         .piece-bank {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-            padding: 10px;
-            background: #e8e8e8;
-            border-radius: 8px;
-            max-height: 300px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            padding: 15px;
+            background: #f8f8f8;
+            border-radius: 10px;
+            max-height: 400px;
             overflow-y: auto;
         }
 
-        .piece-canvas {
+        @media (min-width: 900px) {
+            .piece-bank {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .piece-slot {
+            position: relative;
             width: 100%;
-            aspect-ratio: 1;
-            border-radius: 6px;
+            height: 80px;
+            background: #f0f0f0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            border: 2px dashed #ccc;
+        }
+
+        .piece-slot.has-piece {
+            border: 2px solid #aaa;
+            background: #fff;
+        }
+
+        .piece-canvas {
+            width: 70px;
+            height: 70px;
             cursor: grab;
             transition: all 0.2s;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .piece-canvas:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transform: scale(1.1);
         }
 
         .piece-canvas:active {
@@ -190,90 +219,155 @@
 
         /* Stats */
         .stats {
-            display: flex;
-            justify-content: space-around;
-            background: #2a2a2a;
-            color: white;
-            padding: 12px;
-            border-radius: 8px;
-            margin-top: 15px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
         }
 
-        .stat-item {
+        .stat-card {
+            background: #2a2a2a;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
             text-align: center;
         }
 
         .stat-value {
-            font-size: 20px;
+            font-size: 24px;
             font-weight: bold;
-            color: #4a9eda;
+            color: #6ab7ff;
+            margin-bottom: 5px;
         }
 
         .stat-label {
             font-size: 12px;
             color: #aaa;
-            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         /* Instructions */
-        .instructions {
-            background: #f0f0f0;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-            font-size: 14px;
-            line-height: 1.5;
+        .legend {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .legend h3 {
+            color: #1a1a1a;
+            margin-bottom: 15px;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .legend-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .legend-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .legend-icon.knob {
+            background: #3a3a3a;
+            border: 2px solid #1a1a1a;
+        }
+
+        .legend-icon.hole {
+            background: #1a1a1a;
+            border: 2px solid #fff;
+        }
+
+        .legend-icon.flat {
+            background: #666;
+            width: 25px;
+            height: 5px;
+        }
+
+        .legend-text {
             color: #444;
-        }
-
-        .instructions h3 {
-            color: #2a2a2a;
-            margin-bottom: 10px;
-        }
-
-        .instructions ul {
-            padding-left: 20px;
-        }
-
-        .instructions li {
-            margin-bottom: 5px;
+            font-size: 14px;
         }
 
         /* Drag hint */
         #dragHint {
             position: fixed;
-            bottom: 20px;
+            bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(42, 42, 42, 0.95);
+            background: rgba(26, 26, 26, 0.95);
             color: white;
-            padding: 12px 24px;
-            border-radius: 25px;
+            padding: 15px 30px;
+            border-radius: 30px;
             font-size: 14px;
             z-index: 1000;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.3s;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
         }
 
         #dragHint.visible {
             opacity: 1;
         }
+
+        /* UNDO button */
+        #undoBtn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: #2a2a2a;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+        }
+
+        #undoBtn:hover {
+            background: #3a3a3a;
+            transform: scale(1.1);
+        }
+
+        #undoBtn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
+    <!-- UNDO Button -->
+    <button id="undoBtn" title="Undo last move" onclick="undoLastMove()" disabled>↶</button>
+
     <div class="game-container">
         <!-- Header -->
         <div class="header">
             <h1>J U Z Z L E · 16</h1>
-            <div class="subtitle">4×4 Mathematical Prototype | Knob ↔ Hole System</div>
+            <div class="subtitle">Classic Puzzle Piece Shapes | Knob ↔ Hole System</div>
             
             <div class="controls">
-                <button class="control-btn primary" onclick="newGame()">New Game</button>
-                <button class="control-btn" onclick="addLockedPieces()">Add Locked (0h h1)</button>
-                <button class="control-btn" onclick="showSolution()">Show Valid Spots</button>
-                <button class="control-btn" onclick="resetBoard()">Reset Board</button>
+                <button class="control-btn primary" onclick="newGame()">New Puzzle</button>
+                <button class="control-btn" onclick="addLockedPieces()">Add Locked Pieces</button>
+                <button class="control-btn" onclick="showValidSpots()">Show Valid Spots</button>
+                <button class="control-btn warning" onclick="resetBoard()">Reset Board</button>
             </div>
         </div>
 
@@ -281,19 +375,19 @@
         <div class="game-area">
             <!-- Board -->
             <div class="board-container">
-                <h2>4 × 4 P U Z Z L E</h2>
-                <canvas id="boardCanvas" width="320" height="320"></canvas>
+                <h2>4 × 4 P U Z Z L E B O A R D</h2>
+                <canvas id="boardCanvas" width="400" height="400"></canvas>
                 
                 <div class="stats">
-                    <div class="stat-item">
+                    <div class="stat-card">
                         <div class="stat-value" id="placedCount">0</div>
                         <div class="stat-label">Placed</div>
                     </div>
-                    <div class="stat-item">
+                    <div class="stat-card">
                         <div class="stat-value" id="lockedCount">0</div>
                         <div class="stat-label">Locked</div>
                     </div>
-                    <div class="stat-item">
+                    <div class="stat-card">
                         <div class="stat-value">16</div>
                         <div class="stat-label">Total</div>
                     </div>
@@ -306,35 +400,50 @@
                     <h2>P I E C E &nbsp; B A N K</h2>
                     <div id="bankCounter">16</div>
                 </div>
-                <div id="pieceContainer" class="piece-bank"></div>
+                <div id="pieceContainer" class="piece-bank">
+                    <!-- Pieces will be inserted here -->
+                </div>
             </div>
         </div>
 
-        <!-- Instructions -->
-        <div class="instructions">
-            <h3>How It Works:</h3>
-            <ul>
-                <li><strong>Knobs</strong> (outer circles) connect only to <strong>Holes</strong> (inner circles)</li>
-                <li><strong>Flat sides</strong> only appear on puzzle edges</li>
-                <li>Each piece is generated for its specific board position</li>
-                <li><strong>Drag pieces</strong> from bank to board (green = valid spot)</li>
-                <li>Pieces with <strong>red borders</strong> are locked (like 0h h1)</li>
-            </ul>
+        <!-- Legend -->
+        <div class="legend">
+            <h3>Connector Types:</h3>
+            <div class="legend-items">
+                <div class="legend-item">
+                    <div class="legend-icon knob"></div>
+                    <div class="legend-text"><strong>Knob</strong> (protrusion) → connects only to Hole</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-icon hole"></div>
+                    <div class="legend-text"><strong>Hole</strong> (indentation) → connects only to Knob</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-icon flat"></div>
+                    <div class="legend-text"><strong>Flat side</strong> → only on puzzle edges</div>
+                </div>
+            </div>
         </div>
 
         <!-- Drag Hint -->
-        <div id="dragHint">Drop piece on highlighted green cell</div>
+        <div id="dragHint">Drag piece to highlighted green spot</div>
     </div>
 
     <script src="juzzle16.js"></script>
     <script>
-        // Simple drag hint handler
+        // Global drag hint handler
         function showDragHint(text) {
             const hint = document.getElementById('dragHint');
             hint.textContent = text;
             hint.classList.add('visible');
-            setTimeout(() => hint.classList.remove('visible'), 1500);
+            setTimeout(() => hint.classList.remove('visible'), 2000);
+        }
+
+        // Update undo button state
+        function updateUndoButton() {
+            const undoBtn = document.getElementById('undoBtn');
+            undoBtn.disabled = !window.moveHistory || window.moveHistory.length === 0;
         }
     </script>
 </body>
-</html> 
+</html>
