@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Juzzle Generator - EvenOdd Boolean Operations</title>
+    <style>
+        body { margin: 0; padding: 20px; background: #111; color: #eee; font-family: monospace; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { color: #0af; text-align: center; margin: 20px 0; }
+        .subtitle { text-align: center; color: #888; margin-bottom: 30px; }
+        .controls {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: #222;
+            border-radius: 10px;
+            border: 1px solid #444;
+        }
+        button {
+            padding: 12px 24px;
+            margin: 8px;
+            background: #0a5;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover { background: #0c6; }
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+        .piece-card {
+            background: #222;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #444;
+        }
+        .piece-header {
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .piece-id { color: #0af; font-weight: bold; font-size: 18px; }
+        .piece-svg {
+            width: 100%;
+            height: 300px;
+            background: #181818;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Juzzle Generator - EvenOdd Boolean Operations</h1>
+        <div class="subtitle">Using clip-rule="evenodd" for proper union/difference</div>
+        
+        <div class="controls">
+            <button onclick="generatePieces(16)">Generate 16 Pieces</button>
+            <button onclick="generatePieces(24)">Generate 24 Pieces</button>
+            <button onclick="exportGrid()">Export Grid</button>
+        </div>
+        
+        <div id="grid"></div>
+    </div>
+
+    <script>
+        // Template coordinates
+        const TEMPLATE = {
+            square: { x: 373.83, y: 381.35, width: 355.32, height: 355.32 },
+            sides: {
+                left: [
+                    { cx: 331.55, cy: 559.01, type: 'outer' },
+                    { cx: 414.33, cy: 559.01, type: 'inner' }
+                ],
+                right: [
+                    { cx: 688.86, cy: 559.01, type: 'inner' },
+                    { cx: 771.64, cy: 559.01, type: 'outer' }
+                ],
+                top: [
+                    { cx: 551.49, cy: 336.84, type: 'outer' },
+                    { cx: 551.49, cy: 419.63, type: 'inner' }
+                ],
+                bottom: [
+                    { cx: 551.49, cy: 694.15, type: 'inner' },
+                    { cx: 551.49, cy: 776.94, type: 'outer' }
+                ]
+            },
+            radius: 64.65
+        };
+
+        class EvenOddGenerator {
+            constructor() {
+                this.normalizeCoordinates();
+            }
+            
+            normalizeCoordinates() {
+                this.square = { x: 0, y: 0, width: TEMPLATE.square.width, height: TEMPLATE.square.height };
+                
+                this.sides = {};
+                for (const [sideName, circles] of Object.entries(TEMPLATE.sides)) {
+                    this.sides[sideName] = circles.map(circle => ({
+                        cx: circle.cx - TEMPLATE.square.x,
+                        cy: circle.cy - TEMPLATE.square.y,
+                        type: circle.type,
+                        original: circle
+                    }));
+                }
+            }
+            
+            generatePiece() {
+                return {
+                    left: Math.random() > 0.5 ? 0 : 1,
+                    right: Math.random() > 0.5 ? 0 : 1,
+                    top: Math.random() > 0.5 ? 0 : 1,
+                    bottom: Math.random() > 0.5 ? 0 : 1
+                };
+            }
+            
+            // Create SVG path using evenodd rule
+            createPieceSVG(piece, id, color) {
+                const svgNS = "http://www.w3.org/2000/svg";
+                const svg = document.createElementNS(svgNS, 'svg');
+                svg.setAttribute('viewBox', '0 0 355.32 355.32');
+                svg.setAttribute('width', '300');
+                svg.setAttribute('height', '300');
+                
+                // Create single path with evenodd fill-rule
+                const path = document.createElementNS(svgNS, 'path');
+                
+                // Start with square path
+                let pathData = `M0,0 L${this.square.width},0 L${this.square.width},${this.square.height} L0,${this.square.height} Z`;
+                
+                // Collect circles for boolean operations
+                const innerCircles = []; // For difference (holes)
+                const outerCircles = []; // For union (knobs)
+                
+                for (const [sideName, circleIndex] of Object.entries(piece)) {
+                    const circle = this.sides[sideName][circleIndex];
+                    if (circle.type === 'inner') {
+                        innerCircles.push(circle);
+                    } else {
+                        outerCircles.push(circle);
+                    }
+                }
+                
+                // Add inner circles (holes) - will be subtracted using evenodd
+                innerCircles.forEach(circle => {
+                    const r = TEMPLATE.radius;
+                    const x = circle.cx;
+                    const y = circle.cy;
+                    // Add circle in opposite direction for subtraction
+                    pathData += ` M ${x + r},${y}`;
+                    pathData += ` A ${r},${r} 0 1,0 ${x - r},${y}`;
+                    pathData += ` A ${r},${r} 0 1,0 ${x + r},${y} Z`;
+                });
+                
+                // Set path attributes
+                path.setAttribute('d', pathData);
+                path.setAttribute('fill', color);
+                path.setAttribute('stroke', '#0af');
+                path.setAttribute('stroke-width', '6');
+                path.setAttribute('fill-rule', 'evenodd');
+                svg.appendChild(path);
+                
+                // Add outer circles (knobs) as separate paths on top
+                outerCircles.forEach(circle => {
+                    const knob = document.createElementNS(svgNS, 'circle');
+                    knob.setAttribute('cx', circle.cx);
+                    knob.setAttribute('cy', circle.cy);
+                    knob.setAttribute('r', TEMPLATE.radius);
+                    knob.setAttribute('fill', color);
+                    knob.setAttribute('stroke', '#0a5');
+                    knob.setAttribute('stroke-width', '6');
+                    svg.appendChild(knob);
+                });
+                
+                // Add visual guides for non-selected circles
+                const guides = document.createElementNS(svgNS, 'g');
+                guides.setAttribute('opacity', '0.2');
+                
+                for (const [sideName, circles] of Object.entries(this.sides)) {
+                    const selectedIndex = piece[sideName];
+                    const otherIndex = selectedIndex === 0 ? 1 : 0;
+                    const otherCircle = circles[otherIndex];
+                    
+                    const guide = document.createElementNS(svgNS, 'circle');
+                    guide.setAttribute('cx', otherCircle.cx);
+                    guide.setAttribute('cy', otherCircle.cy);
+                    guide.setAttribute('r', TEMPLATE.radius);
+                    guide.setAttribute('fill', 'none');
+                    guide.setAttribute('stroke', otherCircle.type === 'inner' ? '#f00' : '#0a5');
+                    guide.setAttribute('stroke-width', '2');
+                    guide.setAttribute('stroke-dasharray', '4,4');
+                    guides.appendChild(guide);
+                }
+                
+                svg.appendChild(guides);
+                
+                return svg;
+            }
+            
+            getPieceCode(piece) {
+                const sideCodes = {
+                    left: ['L↑', 'L↓'],
+                    right: ['R↑', 'R↓'],
+                    top: ['T←', 'T→'],
+                    bottom: ['B←', 'B→']
+                };
+                
+                let code = '';
+                for (const [sideName, circleIndex] of Object.entries(piece)) {
+                    const circle = this.sides[sideName][circleIndex];
+                    code += `${sideCodes[sideName][circleIndex]}${circle.type === 'inner' ? 'H' : 'K'} `;
+                }
+                return code.trim();
+            }
+            
+            getPieceStats(piece) {
+                let knobs = 0, holes = 0;
+                for (const [sideName, circleIndex] of Object.entries(piece)) {
+                    if (this.sides[sideName][circleIndex].type === 'inner') {
+                        holes++;
+                    } else {
+                        knobs++;
+                    }
+                }
+                return { knobs, holes };
+            }
+        }
+
+        const colors = [
+            '#1e90ff', '#32cd32', '#ff4500', '#ffd700',
+            '#9370db', '#00ced1', '#ff69b4', '#9acd32',
+            '#4169e1', '#3cb371', '#dc143c', '#ff8c00',
+            '#6a5acd', '#20b2aa', '#ff1493', '#7cfc00',
+            '#0000cd', '#2e8b57', '#b22222', '#ffa500',
+            '#483d8b', '#008b8b', '#c71585', '#7fff00'
+        ];
+
+        const generator = new EvenOddGenerator();
+        let currentPieces = [];
+
+        function generatePieces(count) {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            currentPieces = [];
+            
+            for (let i = 0; i < count; i++) {
+                const piece = generator.generatePiece();
+                const color = colors[i % colors.length];
+                const stats = generator.getPieceStats(piece);
+                
+                const card = document.createElement('div');
+                card.className = 'piece-card';
+                
+                const header = document.createElement('div');
+                header.className = 'piece-header';
+                header.innerHTML = `
+                    <div class="piece-id">Piece ${i + 1}</div>
+                    <div style="color:#888;font-size:12px;margin-top:5px;">
+                        ${stats.knobs} knobs, ${stats.holes} holes
+                    </div>
+                `;
+                card.appendChild(header);
+                
+                const svg = generator.createPieceSVG(piece, i, color);
+                svg.className = 'piece-svg';
+                card.appendChild(svg);
+                
+                grid.appendChild(card);
+                currentPieces.push({ id: i, piece, color, stats });
+            }
+        }
+
+        function exportGrid() {
+            const svgNS = 'http://www.w3.org/2000/svg';
+            const masterSVG = document.createElementNS(svgNS, 'svg');
+            masterSVG.setAttribute('xmlns', svgNS);
+            masterSVG.setAttribute('width', '1200');
+            masterSVG.setAttribute('height', '800');
+            masterSVG.setAttribute('viewBox', '0 0 1200 800');
+            
+            const bg = document.createElementNS(svgNS, 'rect');
+            bg.setAttribute('width', '1200');
+            bg.setAttribute('height', '800');
+            bg.setAttribute('fill', '#111');
+            masterSVG.appendChild(bg);
+            
+            const cols = 4;
+            const rows = Math.ceil(currentPieces.length / cols);
+            const pieceSize = 1200 / cols * 0.7;
+            
+            currentPieces.forEach((p, i) => {
+                const col = i % cols;
+                const row = Math.floor(i / cols);
+                const x = col * (1200 / cols) + (1200 / cols) / 2;
+                const y = row * (700 / rows) + 100;
+                
+                const group = document.createElementNS(svgNS, 'g');
+                group.setAttribute('transform', `translate(${x}, ${y}) scale(0.23)`);
+                
+                const pieceSVG = generator.createPieceSVG(p.piece, `export-${i}`, p.color);
+                pieceSVG.removeAttribute('width');
+                pieceSVG.removeAttribute('height');
+                pieceSVG.setAttribute('viewBox', '0 0 355.32 355.32');
+                
+                const cloned = document.importNode(pieceSVG, true);
+                group.appendChild(cloned);
+                
+                masterSVG.appendChild(group);
+                
+                const text = document.createElementNS(svgNS, 'text');
+                text.setAttribute('x', x);
+                text.setAttribute('y', y + 100);
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('fill', '#888');
+                text.setAttribute('font-size', '12');
+                text.textContent = `Piece ${i + 1}`;
+                masterSVG.appendChild(text);
+            });
+            
+            const serializer = new XMLSerializer();
+            const svgString = serializer.serializeToString(masterSVG);
+            const blob = new Blob([svgString], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'juzzle-pieces.svg';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        generatePieces(16);
+    </script>
+</body>
+</html> 
