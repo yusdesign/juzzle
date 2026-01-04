@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Juzzle</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #e8e8e8;
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding: 5px;
+        }
+
+        .game-container {
+            max-width: 100%;
+        }
+
+        /* Collapsible Header */
+        .header {
+            background: #f0f0f0;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background: #2a2a2a;
+            color: white;
+        }
+
+        .header-top h1 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        #toggleControls {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        #controls {
+            display: none;
+            padding: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            background: #f8f8f8;
+            border-top: 1px solid #ddd;
+        }
+
+        .control-btn {
+            padding: 10px 15px;
+            background: #2a2a2a;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            min-width: 120px;
+            transition: background 0.2s;
+        }
+
+        .control-btn:hover {
+            background: #404040;
+        }
+
+        .control-btn.toggle {
+            background: #3a3a3a;
+        }
+
+        /* Main Game Area */
+        .main-area {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        @media (min-width: 768px) {
+            .main-area {
+                flex-direction: row;
+                align-items: flex-start;
+            }
+        }
+
+        /* Board - No Margins */
+        .board-container {
+            background: #f0f0f0;
+            border-radius: 8px;
+            overflow: hidden;
+            flex: 1;
+        }
+
+        .board-container h2 {
+            font-size: 15px;
+            padding: 10px;
+            background: #2a2a2a;
+            color: white;
+            text-align: center;
+            margin: 0;
+        }
+
+        #boardCanvas {
+            width: 100%;
+            height: auto;
+            display: block;
+            background: white;
+        }
+
+        /* Piece Bank - Horizontal Scroll */
+        .bank-container {
+            background: #f0f0f0;
+            border-radius: 8px;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        @media (min-width: 768px) {
+            .bank-container {
+                width: 320px;
+            }
+        }
+
+        .bank-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #2a2a2a;
+            color: white;
+        }
+
+        .bank-header h2 {
+            font-size: 15px;
+            margin: 0;
+        }
+
+        .bank-scroll-controls {
+            display: flex;
+            gap: 5px;
+        }
+
+        .scroll-btn {
+            background: #3a3a3a;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .piece-bank {
+            display: flex;
+            overflow-x: auto;
+            gap: 8px;
+            padding: 12px;
+            background: #e8e8e8;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .piece-bank::-webkit-scrollbar {
+            display: none;
+        }
+
+        .piece-canvas {
+            flex: 0 0 auto;
+            width: 50px;
+            height: 50px;
+            border-radius: 6px;
+            cursor: grab;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        .piece-canvas:hover {
+            transform: scale(1.05);
+        }
+
+        .piece-canvas:active {
+            cursor: grabbing;
+        }
+
+        /* Counter */
+        #counter {
+            text-align: center;
+            padding: 8px;
+            font-size: 13px;
+            color: #666;
+            background: #f8f8f8;
+            border-top: 1px solid #ddd;
+        }
+
+        /* Drag Hint */
+        .drag-hint {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(42, 42, 42, 0.9);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .drag-hint.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Collapsible Header -->
+        <div class="header">
+            <div class="header-top">
+                <h1>J U Z Z L E</h1>
+                <button id="toggleControls">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+            </div>
+            <div id="controls">
+                <button class="control-btn" onclick="generatePieces()">New Game</button>
+                <button class="control-btn" onclick="placeLockedPieces()">Add Locked</button>
+                <button class="control-btn" onclick="clearBoard()">Clear Board</button>
+                <button class="control-btn toggle" id="toggleHints" onclick="toggleHints()">
+                    <i class="fas fa-lightbulb"></i> Hints: ON
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Game Area -->
+        <div class="main-area">
+            <!-- Game Board (No margins) -->
+            <div class="board-container">
+                <h2>P U Z Z L E &nbsp; B O A R D</h2>
+                <canvas id="boardCanvas"></canvas>
+                <div id="counter">Pieces: 0/144</div>
+            </div>
+
+            <!-- Piece Bank (Horizontal Scroll) -->
+            <div class="bank-container">
+                <div class="bank-header">
+                    <h2>P I E C E &nbsp; B A N K</h2>
+                    <div class="bank-scroll-controls">
+                        <button class="scroll-btn" onclick="scrollBank(-100)">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="scroll-btn" onclick="scrollBank(100)">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="pieceContainer" class="piece-bank"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Drag Hint -->
+    <div class="drag-hint" id="dragHint">Drop here to place piece</div>
+
+    <script src="juzzle2.js"></script>
+    <script>
+        // Scroll controls for bank
+        function scrollBank(amount) {
+            const bank = document.getElementById('pieceContainer');
+            bank.scrollBy({ left: amount, behavior: 'smooth' });
+        }
+
+        // Show/hide drag hint
+        function showDragHint(show) {
+            const hint = document.getElementById('dragHint');
+            hint.classList.toggle('visible', show);
+        }
+
+        // Toggle controls
+        document.getElementById('toggleControls').addEventListener('click', function() {
+            const controls = document.getElementById('controls');
+            const icon = this.querySelector('i');
+            
+            if (controls.style.display === 'flex') {
+                controls.style.display = 'none';
+                icon.className = 'fas fa-chevron-down';
+            } else {
+                controls.style.display = 'flex';
+                icon.className = 'fas fa-chevron-up';
+            }
+        });
+    </script>
+</body>
+</html> 
