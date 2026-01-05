@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Juzzle Pieces</title>
+    <style>
+        body { margin: 20px; font-family: monospace; background: #111; color: #eee; }
+        .debug-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin: 20px; }
+        .piece-debug { 
+            background: #222; 
+            padding: 15px; 
+            border-radius: 10px; 
+            border: 2px solid #444;
+            text-align: center;
+        }
+        .piece-box { 
+            width: 200px; 
+            height: 200px; 
+            background: #333; 
+            margin: 10px auto;
+            border: 1px solid #666;
+            overflow: visible !important;
+        }
+        .info { font-size: 12px; color: #888; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug Juzzle Pieces</h1>
+    <p>Testing if knobs exist but are hidden/cut-off</p>
+    
+    <div class="debug-container" id="debug-container"></div>
+    
+    <script>
+        // Try to recreate a piece using YOUR generator's exact logic
+        function createDebugPiece(id) {
+            const svgNS = "http://www.w3.org/2000/svg";
+            const svg = document.createElementNS(svgNS, 'svg');
+            
+            // CRITICAL: Try different viewBox settings
+            svg.setAttribute('viewBox', '-50 -50 455.32 455.32'); // Expanded viewBox
+            svg.setAttribute('width', '200');
+            svg.setAttribute('height', '200');
+            svg.setAttribute('style', 'border: 1px solid red; background: #1a1a1a;');
+            
+            // Create square (base)
+            const square = document.createElementNS(svgNS, 'rect');
+            square.setAttribute('x', '0');
+            square.setAttribute('y', '0');
+            square.setAttribute('width', '355.32');
+            square.setAttribute('height', '355.32');
+            square.setAttribute('fill', '#4A90E2');
+            square.setAttribute('stroke', '#2C3E50');
+            square.setAttribute('stroke-width', '4');
+            svg.appendChild(square);
+            
+            // Try creating a knob (OUTER connector - should be visible)
+            // Using your template coordinates, normalized
+            const knob = document.createElementNS(svgNS, 'circle');
+            knob.setAttribute('cx', '331.55 - 373.83 + 177.66'); // Left outer knob position
+            knob.setAttribute('cy', '559.01 - 381.35 + 177.66');
+            knob.setAttribute('r', '64.65');
+            knob.setAttribute('fill', '#FF6B6B'); // Bright red to see
+            knob.setAttribute('stroke', 'white');
+            knob.setAttribute('stroke-width', '3');
+            knob.setAttribute('class', 'knob-debug');
+            svg.appendChild(knob);
+            
+            // Try creating a hole (INNER connector - might be masked)
+            const hole = document.createElementNS(svgNS, 'circle');
+            hole.setAttribute('cx', '414.33 - 373.83 + 177.66'); // Left inner position
+            hole.setAttribute('cy', '559.01 - 381.35 + 177.66');
+            hole.setAttribute('r', '64.65');
+            hole.setAttribute('fill', 'none');
+            hole.setAttribute('stroke', '#4CAF50'); // Bright green
+            hole.setAttribute('stroke-width', '3');
+            hole.setAttribute('stroke-dasharray', '5,5');
+            hole.setAttribute('class', 'hole-debug');
+            svg.appendChild(hole);
+            
+            // Add coordinate markers
+            const center = document.createElementNS(svgNS, 'circle');
+            center.setAttribute('cx', '177.66');
+            center.setAttribute('cy', '177.66');
+            center.setAttribute('r', '5');
+            center.setAttribute('fill', 'white');
+            svg.appendChild(center);
+            
+            // Add text labels
+            const knobLabel = document.createElementNS(svgNS, 'text');
+            knobLabel.setAttribute('x', '50');
+            knobLabel.setAttribute('y', '30');
+            knobLabel.setAttribute('fill', 'white');
+            knobLabel.setAttribute('font-size', '12');
+            knobLabel.textContent = 'KNOB (red)';
+            svg.appendChild(knobLabel);
+            
+            const holeLabel = document.createElementNS(svgNS, 'text');
+            holeLabel.setAttribute('x', '250');
+            holeLabel.setAttribute('y', '30');
+            holeLabel.setAttribute('fill', 'white');
+            holeLabel.setAttribute('font-size', '12');
+            holeLabel.textContent = 'HOLE (green)';
+            svg.appendChild(holeLabel);
+            
+            return svg;
+        }
+        
+        // Create debug pieces
+        for (let i = 0; i < 8; i++) {
+            const container = document.createElement('div');
+            container.className = 'piece-debug';
+            
+            const title = document.createElement('h3');
+            title.textContent = `Debug Piece ${i + 1}`;
+            container.appendChild(title);
+            
+            const pieceBox = document.createElement('div');
+            pieceBox.className = 'piece-box';
+            pieceBox.appendChild(createDebugPiece(i));
+            container.appendChild(pieceBox);
+            
+            const info = document.createElement('div');
+            info.className = 'info';
+            info.innerHTML = `ViewBox: -50 -50 455.32 455.32<br>Square: 0,0 355.32×355.32`;
+            container.appendChild(info);
+            
+            document.getElementById('debug-container').appendChild(container);
+        }
+        
+        // Also test YOUR actual generator function
+        function testActualGenerator() {
+            console.log("Testing your generator's output...");
+            
+            // Try to access your generator if it exists
+            if (typeof generator !== 'undefined') {
+                console.log("Generator found:", generator);
+                
+                // Create a test piece
+                const testPiece = generator.createPieceSVG({left:0, right:1, top:0, bottom:1}, 'test', '#4A90E2');
+                
+                // Inspect the SVG structure
+                console.log("Generated SVG:", testPiece);
+                console.log("SVG children:", testPiece.children.length);
+                
+                // Check for hidden elements
+                const svgString = new XMLSerializer().serializeToString(testPiece);
+                console.log("SVG source:", svgString);
+            } else {
+                console.log("Generator not found in global scope");
+                
+                // Try to find it
+                const scripts = document.querySelectorAll('script');
+                scripts.forEach((script, i) => {
+                    if (script.textContent.includes('createPieceSVG') || 
+                        script.textContent.includes('createBooleanSVG')) {
+                        console.log(`Generator code found in script ${i}`);
+                    }
+                });
+            }
+        }
+        
+        // Run test
+        setTimeout(testActualGenerator, 1000);
+    </script>
+</body>
+</html>
