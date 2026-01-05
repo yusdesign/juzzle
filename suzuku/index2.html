@@ -489,6 +489,28 @@
             stroke-dasharray: 5, 5;
             opacity: 0.5;
         }
+
+       /* Force vertical layout on mobile */
+@media (max-width: 768px) {
+    .game-container {
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    
+    .bank-section {
+        order: 1 !important;
+        max-height: 300px !important;
+        overflow-y: auto !important;
+    }
+    
+    .board-section {
+        order: 2 !important;
+    }
+    
+    .side-panel {
+        order: 3 !important;
+    }
+} 
     </style>
 </head>
 <body>
