@@ -680,87 +680,146 @@
             // Create SVG with real boolean operations (knobs = union, holes = difference)
             // createBooleanSVG(pattern, color)
             // Create clean piece with masks - NO OUTLINES
-            createBooleanSVG(piece, id, color) {
-                const svgNS = "http://www.w3.org/2000/svg";
-                const svg = document.createElementNS(svgNS, 'svg');
-                svg.setAttribute('viewBox', '0 0 355.32 355.32');
-                svg.setAttribute('width', '300');
-                svg.setAttribute('height', '300');
-                
-                // Create mask for boolean operations
-                const defs = document.createElementNS(svgNS, 'defs');
-                
-                // Mask for holes (inner circles = subtract from shape)
-                const mask = document.createElementNS(svgNS, 'mask');
-                mask.setAttribute('id', `mask-${id}`);
-                
-                // White background = show everything
-                const whiteBg = document.createElementNS(svgNS, 'rect');
-                whiteBg.setAttribute('x', '0');
-                whiteBg.setAttribute('y', '0');
-                whiteBg.setAttribute('width', '100%');
-                whiteBg.setAttribute('height', '100%');
-                whiteBg.setAttribute('fill', 'white');
-                mask.appendChild(whiteBg);
-                
-                // Add black circles for holes (black = hide in mask)
-                for (const [sideName, circleIndex] of Object.entries(piece)) {
-                    const circle = this.sides[sideName][circleIndex];
-                    if (circle.type === 'inner') {
-                        const hole = document.createElementNS(svgNS, 'circle');
-                        hole.setAttribute('cx', circle.cx);
-                        hole.setAttribute('cy', circle.cy);
-                        hole.setAttribute('r', TEMPLATE.radius);
-                        hole.setAttribute('fill', 'black');
-                        mask.appendChild(hole);
-                    }
-                }
-                
-                defs.appendChild(mask);
-                svg.appendChild(defs);
-                
-                // Create clipPath for inner circles
-                const clipPath = document.createElementNS(svgNS, 'clipPath');
-                clipPath.setAttribute('id', `clip-${id}`);
-                const clipRect = document.createElementNS(svgNS, 'rect');
-                clipRect.setAttribute('x', '0');
-                clipRect.setAttribute('y', '0');
-                clipRect.setAttribute('width', this.square.width);
-                clipRect.setAttribute('height', this.square.height);
-                clipPath.appendChild(clipRect);
-                defs.appendChild(clipPath);
-                
-                // Main piece group
-                const group = document.createElementNS(svgNS, 'g');
-                
-                // Base square with mask for holes
-                const square = document.createElementNS(svgNS, 'rect');
-                square.setAttribute('x', '0');
-                square.setAttribute('y', '0');
-                square.setAttribute('width', this.square.width);
-                square.setAttribute('height', this.square.height);
-                square.setAttribute('fill', color);
-                square.setAttribute('mask', `url(#mask-${id})`);
-                group.appendChild(square);
-                
-                // Add knobs (outer circles) - union operations
-                for (const [sideName, circleIndex] of Object.entries(piece)) {
-                    const circle = this.sides[sideName][circleIndex];
-                    if (circle.type === 'outer') {
-                        const knob = document.createElementNS(svgNS, 'circle');
-                        knob.setAttribute('cx', circle.cx);
-                        knob.setAttribute('cy', circle.cy);
-                        knob.setAttribute('r', TEMPLATE.radius);
-                        knob.setAttribute('fill', color);
-                        group.appendChild(knob);
-                    }
-                }
-                
-                svg.appendChild(group);
-                
-                return svg;
-            }
+            createBooleanSVG(pattern, color, pieceId) {
+    const svgNS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNS, 'svg');
+    
+    // CRITICAL: Expand viewBox so knobs are visible
+    const padding = 100; // Extra space for knobs
+    svg.setAttribute('viewBox', 
+        `-${padding} -${padding} 
+         ${this.square.width + padding * 2} 
+         ${this.square.height + padding * 2}`);
+    
+    svg.setAttribute('width', '200');
+    svg.setAttribute('height', '200');
+    svg.setAttribute('class', 'piece-svg');
+    
+    // Create unique mask ID for each piece
+    const maskId = `mask-${pieceId || Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Create definitions
+    const defs = document.createElementNS(svgNS, 'defs');
+    
+    // Create mask for holes
+    const mask = document.createElementNS(svgNS, 'mask');
+    mask.setAttribute('id', maskId);
+    
+    // White background (shows everything)
+    const whiteBg = document.createElementNS(svgNS, 'rect');
+    whiteBg.setAttribute('x', '0');
+    whiteBg.setAttribute('y', '0');
+    whiteBg.setAttribute('width', this.square.width);
+    whiteBg.setAttribute('height', this.square.height);
+    whiteBg.setAttribute('fill', 'white');
+    mask.appendChild(whiteBg);
+    
+    // Add black circles for HOLES (difference operation)
+    // Using your exact template coordinates
+    const connections = {
+        left: [
+            { cx: -41.72, cy: 177.66 - 41.72, type: 'outer' },
+            { cx: -41.72, cy: 177.66 + 41.72, type: 'inner' }
+        ],
+        right: [
+            { cx: 355.32 + 41.72, cy: 177.66 - 41.72, type: 'inner' },
+            { cx: 355.32 + 41.72, cy: 177.66 + 41.72, type: 'outer' }
+        ],
+        top: [
+            { cx: 177.66 - 41.72, cy: -41.72, type: 'outer' },
+            { cx: 177.66 + 41.72, cy: -41.72, type: 'inner' }
+        ],
+        bottom: [
+            { cx: 177.66 - 41.72, cy: 355.32 + 41.72, type: 'inner' },
+            { cx: 177.66 + 41.72, cy: 355.32 + 41.72, type: 'outer' }
+        ]
+    };
+    
+    // Process pattern to add holes to mask
+    ['left', 'right', 'top', 'bottom'].forEach(side => {
+        const circleIndex = pattern[side];
+        const circle = connections[side][circleIndex];
+        
+        if (circle.type === 'inner') { // HOLE = black in mask
+            const hole = document.createElementNS(svgNS, 'circle');
+            hole.setAttribute('cx', circle.cx);
+            hole.setAttribute('cy', circle.cy);
+            hole.setAttribute('r', 64.65);
+            hole.setAttribute('fill', 'black');
+            mask.appendChild(hole);
         }
+    });
+    
+    defs.appendChild(mask);
+    svg.appendChild(defs);
+    
+    // Main piece group
+    const group = document.createElementNS(svgNS, 'g');
+    
+    // Base square with mask applied
+    const square = document.createElementNS(svgNS, 'rect');
+    square.setAttribute('x', '0');
+    square.setAttribute('y', '0');
+    square.setAttribute('width', this.square.width);
+    square.setAttribute('height', this.square.height);
+    square.setAttribute('fill', color);
+    square.setAttribute('mask', `url(#${maskId})`);
+    square.setAttribute('stroke', '#333');
+    square.setAttribute('stroke-width', '3');
+    square.setAttribute('rx', '10');
+    square.setAttribute('ry', '10');
+    group.appendChild(square);
+    
+    // Add KNOBS (union operations) on top
+    ['left', 'right', 'top', 'bottom'].forEach(side => {
+        const circleIndex = pattern[side];
+        const circle = connections[side][circleIndex];
+        
+        if (circle.type === 'outer') { // KNOB = separate circle
+            const knob = document.createElementNS(svgNS, 'circle');
+            knob.setAttribute('cx', circle.cx);
+            knob.setAttribute('cy', circle.cy);
+            knob.setAttribute('r', 64.65);
+            knob.setAttribute('fill', color);
+            knob.setAttribute('stroke', '#4CAF50'); // Green outline for knobs
+            knob.setAttribute('stroke-width', '4');
+            
+            // Add highlight for 3D effect
+            const highlight = document.createElementNS(svgNS, 'circle');
+            highlight.setAttribute('cx', circle.cx);
+            highlight.setAttribute('cy', circle.cy);
+            highlight.setAttribute('r', 64.65 * 0.7);
+            highlight.setAttribute('fill', color === '#000000' ? 
+                'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)');
+            
+            group.appendChild(knob);
+            group.appendChild(highlight);
+        }
+    });
+    
+    svg.appendChild(group);
+    
+    // Add visual guides (optional, for debugging)
+    const guides = document.createElementNS(svgNS, 'g');
+    guides.setAttribute('opacity', '0.3');
+    
+    // Show all possible connection points
+    Object.values(connections).flat().forEach(circle => {
+        const guide = document.createElementNS(svgNS, 'circle');
+        guide.setAttribute('cx', circle.cx);
+        guide.setAttribute('cy', circle.cy);
+        guide.setAttribute('r', 64.65);
+        guide.setAttribute('fill', 'none');
+        guide.setAttribute('stroke', circle.type === 'inner' ? '#FF6B6B' : '#4CAF50');
+        guide.setAttribute('stroke-width', '2');
+        guide.setAttribute('stroke-dasharray', circle.type === 'inner' ? '4,4' : 'none');
+        guides.appendChild(guide);
+    });
+    
+    svg.appendChild(guides);
+    
+    return svg;
+}
 
             countKnobs(pattern) {
                 // Count how many sides have outer connectors (knobs)
